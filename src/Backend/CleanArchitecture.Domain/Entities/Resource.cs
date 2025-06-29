@@ -3,7 +3,7 @@ using CleanArchitecture.Domain.Entities.Interfaces;
 
 namespace CleanArchitecture.Domain.Entities;
 
-public class Resource : IEntity<Resource>
+public class Resource : IEntity<Guid>
 {
 	public Guid Id { get; set; } = Guid.NewGuid();
 

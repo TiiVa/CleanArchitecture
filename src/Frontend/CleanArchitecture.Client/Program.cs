@@ -1,3 +1,4 @@
+using CleanArchitecture.Application.Interfaces.RepositoryInterfaces;
 using CleanArchitecture.Client.Components;
 using CleanArchitecture.Client.Components.Account;
 using CleanArchitecture.Domain.Entities;
@@ -46,6 +47,12 @@ namespace CleanArchitecture.Client
 			builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
 			var app = builder.Build();
+
+			app.MapGet("/documents", async (IDocumentRepository repo) =>
+			{
+				var documents =  await repo.GetAllAsync();
+				return documents;
+			});
 
 			// Configure the HTTP request pipeline.
 			if (app.Environment.IsDevelopment())

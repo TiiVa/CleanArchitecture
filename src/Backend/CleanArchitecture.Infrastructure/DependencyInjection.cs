@@ -1,5 +1,7 @@
-﻿using CleanArchitecture.Domain.Entities;
+﻿using CleanArchitecture.Application.Interfaces.RepositoryInterfaces;
+using CleanArchitecture.Domain.Entities;
 using CleanArchitecture.Infrastructure.Data;
+using CleanArchitecture.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -23,6 +25,8 @@ public static class DependencyInjection
 			.AddEntityFrameworkStores<ApplicationDbContext>()
 			.AddSignInManager()
 			.AddDefaultTokenProviders();
+
+		services.AddScoped<IDocumentRepository, DocumentRepository>();
 
 		return services;
 	}
