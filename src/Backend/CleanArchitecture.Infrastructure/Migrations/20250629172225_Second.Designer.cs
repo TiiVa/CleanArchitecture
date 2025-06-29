@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CleanArchitecture.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250626172113_First")]
-    partial class First
+    [Migration("20250629172225_Second")]
+    partial class Second
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -127,7 +127,7 @@ namespace CleanArchitecture.Infrastructure.Migrations
 
                     b.HasIndex("ResourceId");
 
-                    b.ToTable("Documents");
+                    b.ToTable("Document");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Event", b =>
@@ -168,7 +168,7 @@ namespace CleanArchitecture.Infrastructure.Migrations
 
                     b.HasIndex("InvitationId");
 
-                    b.ToTable("Events");
+                    b.ToTable("Event");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.EventRegistrationForm", b =>
@@ -229,7 +229,7 @@ namespace CleanArchitecture.Infrastructure.Migrations
 
                     b.HasIndex("EventId");
 
-                    b.ToTable("UserMeetingRegistrationForms");
+                    b.ToTable("EventRegistrationForm");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.EventResource", b =>
@@ -244,7 +244,7 @@ namespace CleanArchitecture.Infrastructure.Migrations
 
                     b.HasIndex("ResourceId");
 
-                    b.ToTable("EventResources");
+                    b.ToTable("EventResource");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.ExcelFile", b =>
@@ -265,7 +265,7 @@ namespace CleanArchitecture.Infrastructure.Migrations
 
                     b.HasIndex("ApplicationUserId");
 
-                    b.ToTable("ExcelFiles");
+                    b.ToTable("ExcelFile");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Invitation", b =>
@@ -334,7 +334,7 @@ namespace CleanArchitecture.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Invitations");
+                    b.ToTable("Invitation");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.InvitationSection", b =>
@@ -373,7 +373,7 @@ namespace CleanArchitecture.Infrastructure.Migrations
 
                     b.HasIndex("InvitationId");
 
-                    b.ToTable("InvitationSections");
+                    b.ToTable("InvitationSection");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Resource", b =>
@@ -408,7 +408,7 @@ namespace CleanArchitecture.Infrastructure.Migrations
 
                     b.HasIndex("ApplicationUserId");
 
-                    b.ToTable("Resources");
+                    b.ToTable("Resource");
                 });
 
             modelBuilder.Entity("CleanArchitecture.Domain.Entities.Story", b =>
@@ -449,7 +449,7 @@ namespace CleanArchitecture.Infrastructure.Migrations
 
                     b.HasIndex("EventId");
 
-                    b.ToTable("Stories");
+                    b.ToTable("Story");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

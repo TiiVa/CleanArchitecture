@@ -1,6 +1,7 @@
 ﻿using CleanArchitecture.Domain.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 
 namespace CleanArchitecture.Infrastructure.Data;
 
@@ -52,7 +53,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 			.OnDelete(DeleteBehavior.Cascade);
 
 
+
+
 		base.OnModelCreating(modelBuilder);
+	}
+
+	protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+	{
+		configurationBuilder.Conventions.Remove(typeof(TableNameFromDbSetConvention));
 	}
 
 }
