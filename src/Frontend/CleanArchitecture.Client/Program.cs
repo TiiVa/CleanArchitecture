@@ -53,6 +53,15 @@ namespace CleanArchitecture.Client
 				var documents =  await repo.GetAllAsync();
 				return documents;
 			});
+			app.MapGet("/documents/{id}", async (IDocumentRepository repo, Guid id) =>
+			{
+				var document = await repo.GetByIdAsync(id);
+				return document;
+			});
+			app.MapPost("/documents", async (IDocumentRepository repo, Document newDocument) =>
+			{
+				await repo.AddAsync(newDocument);
+			});
 
 			// Configure the HTTP request pipeline.
 			if (app.Environment.IsDevelopment())

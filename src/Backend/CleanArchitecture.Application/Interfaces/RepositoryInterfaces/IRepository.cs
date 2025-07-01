@@ -5,8 +5,8 @@ namespace CleanArchitecture.Application.Interfaces.RepositoryInterfaces;
 public interface IRepository<TEntity, TId> where TEntity : IEntity<TId>
 {
 	Task<IEnumerable<TEntity>> GetAllAsync();
-	Task<TEntity> GetByIdAsync(int id);
+	Task<TEntity> GetByIdAsync(Guid id);
 	Task AddAsync(TEntity entity);
-	Task UpdateAsync(TEntity entity, int id);
-	Task DeleteAsync(int id);
+	Task UpdateAsync(TEntity entity, Guid id);
+	Task DeleteAsync(Guid id);
 }

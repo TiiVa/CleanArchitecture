@@ -1,5 +1,4 @@
-﻿using System.Reflection.Metadata.Ecma335;
-using CleanArchitecture.Application.Interfaces.RepositoryInterfaces;
+﻿using CleanArchitecture.Application.Interfaces.RepositoryInterfaces;
 using CleanArchitecture.Domain.Entities;
 using CleanArchitecture.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -13,23 +12,51 @@ public class DocumentRepository(ApplicationDbContext context) : IDocumentReposit
 		return await context.Documents.ToListAsync();
 	}
 
-	public async Task<Document> GetByIdAsync(int id)
+	public async Task<Document> GetByIdAsync(Guid id)
 	{
-		throw new NotImplementedException();
+		var document = await context.Documents.FirstOrDefaultAsync(d => d.Id == id);
+		if (document == null)
+		{
+			return new Document();
+		}
+
+		return document;
 	}
 
 	public async Task AddAsync(Document entity)
 	{
-		throw new NotImplementedException();
+		await context.Documents.AddAsync(entity);
+
+		await context.SaveChangesAsync();
 	}
 
-	public async Task UpdateAsync(Document entity, int id)
+	public async Task UpdateAsync(Document entity, Guid id)
 	{
-		throw new NotImplementedException();
+		var documentToUpdate = await context.Documents.FirstOrDefaultAsync(d => d.Id == id);
+		var resource = await context.Resources.FirstOrDefaultAsync(r => r.Id == entity.ResourceId);
+		
+		// Behöver hämta applicationUser med hjälp av UserHandler?
+
+		documentToUpdate.Name = entity.Name;
+		documentToUpdate.Description = entity.Description;
+		documentToUpdate.Type = entity.Type;
+		documentToUpdate.File = entity.File;
+		documentToUpdate.FileLocation = entity.FileLocation;
+		documentToUpdate.ResourceId = entity.ResourceId;
+		documentToUpdate.Resource = entity.Resource;
+		documentToUpdate.ApplicationUserId = entity.ApplicationUserId;
+		documentToUpdate.ApplicationUser = entity.ApplicationUser;
+
+		await context.SaveChangesAsync();
+
 	}
 
-	public async Task DeleteAsync(int id)
+	public async Task DeleteAsync(Guid id)
 	{
-		throw new NotImplementedException();
+		var documentToDelete = await context.Documents.FirstOrDefaultAsync(e => e.Id == id);
+
+		context.Documents.Remove(documentToDelete);
+
+		await context.SaveChangesAsync();
 	}
 }
