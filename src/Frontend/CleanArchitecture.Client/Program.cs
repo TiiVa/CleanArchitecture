@@ -1,3 +1,5 @@
+using CleanArchitecture.Application.DTOs;
+using CleanArchitecture.Application.DTOs.Converters;
 using CleanArchitecture.Application.Interfaces.RepositoryInterfaces;
 using CleanArchitecture.Client.Components;
 using CleanArchitecture.Client.Components.Account;
@@ -58,9 +60,10 @@ namespace CleanArchitecture.Client
 				var document = await repo.GetByIdAsync(id);
 				return document;
 			});
-			app.MapPost("/documents", async (IDocumentRepository repo, Document newDocument) =>
+			app.MapPost("/documents", async (IDocumentRepository repo, DocumentDto newDocument) =>
 			{
-				await repo.AddAsync(newDocument);
+				var newDoc = newDocument.ConvertToModel();
+				await repo.AddAsync(newDoc);
 			});
 
 			// Configure the HTTP request pipeline.

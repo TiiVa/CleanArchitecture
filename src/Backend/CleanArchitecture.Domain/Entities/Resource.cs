@@ -1,5 +1,6 @@
 ﻿using System.Security.AccessControl;
 using CleanArchitecture.Domain.Entities.Interfaces;
+using ResourceType = CleanArchitecture.Domain.Enums.ResourceType;
 
 namespace CleanArchitecture.Domain.Entities;
 
