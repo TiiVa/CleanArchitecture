@@ -3,7 +3,7 @@ using CleanArchitecture.Domain.Enums;
 
 namespace CleanArchitecture.Domain.Entities;
 
-public class Event : IEntity<Guid>
+public class Event : IEntity<Event>
 {
 	public Guid Id { get; set; } = Guid.NewGuid();
 

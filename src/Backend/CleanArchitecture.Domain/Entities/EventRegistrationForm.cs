@@ -4,7 +4,7 @@ using CleanArchitecture.Domain.Enums;
 
 namespace CleanArchitecture.Domain.Entities;
 
-public class EventRegistrationForm : IEntity<Guid>
+public class EventRegistrationForm : IEntity<EventRegistrationForm>
 {
 	public Guid Id { get; set; } = Guid.NewGuid();
 

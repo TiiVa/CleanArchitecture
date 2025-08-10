@@ -2,7 +2,7 @@
 
 namespace CleanArchitecture.Domain.Entities;
 
-public class ExcelFile : IEntity<Guid>
+public class ExcelFile : IEntity<ExcelFile>
 {
 	public Guid Id { get; set; } = Guid.NewGuid();
 

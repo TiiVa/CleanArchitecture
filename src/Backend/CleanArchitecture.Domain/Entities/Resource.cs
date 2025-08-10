@@ -4,7 +4,7 @@ using ResourceType = CleanArchitecture.Domain.Enums.ResourceType;
 
 namespace CleanArchitecture.Domain.Entities;
 
-public class Resource : IEntity<Guid>
+public class Resource : IEntity<Resource>
 {
 	public Guid Id { get; set; } = Guid.NewGuid();
 

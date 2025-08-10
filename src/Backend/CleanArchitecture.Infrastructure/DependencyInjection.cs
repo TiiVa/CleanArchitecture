@@ -1,8 +1,18 @@
-﻿using CleanArchitecture.Application.Interfaces.RepositoryInterfaces;
+﻿using CleanArchitecture.Application.Interfaces;
+using CleanArchitecture.Application.Interfaces.RepositoryInterfaces;
+using CleanArchitecture.Application.Interfaces.ServiceInterfaces;
 using CleanArchitecture.Domain.Entities;
 using CleanArchitecture.Infrastructure.Data;
+using CleanArchitecture.Infrastructure.ExternalServices;
+using CleanArchitecture.Infrastructure.ExternalServices.Excel;
+using CleanArchitecture.Infrastructure.ExternalServices.SeriLog;
+using CleanArchitecture.Infrastructure.FactoryForExternalServices;
+using CleanArchitecture.Infrastructure.FactoryForRepositories;
 using CleanArchitecture.Infrastructure.Repositories;
+using CleanArchitecture.Infrastructure.UOW;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,7 +36,25 @@ public static class DependencyInjection
 			.AddSignInManager()
 			.AddDefaultTokenProviders();
 
-		services.AddScoped<IDocumentRepository, DocumentRepository>();
+
+
+
+
+
+		services.AddScoped<IRepositoryFactory, RepositoryFactory>();
+		services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+		// External Service Factory
+		services.AddScoped<IExternalServiceFactory, ExternalServiceFactory>();
+
+
+		// External services
+
+		services.AddSingleton<ISerilogLogger, SerilogLogger>();
+		services.AddScoped<IWorkBook, WorkBook>();
+		services.AddScoped<IEmailService, EmailService>();
+		services.AddScoped<IEmailSender, EmailService>();
+		services.AddScoped<IPasswordGeneratorService, PasswordGeneratorService>();
 
 		return services;
 	}

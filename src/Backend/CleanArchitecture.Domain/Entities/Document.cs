@@ -3,7 +3,7 @@ using CleanArchitecture.Domain.Enums;
 
 namespace CleanArchitecture.Domain.Entities;
 
-public class Document : IEntity<Guid>
+public class Document : IEntity<Document>
 {
 	public Guid Id { get; set; } = Guid.NewGuid();
 	public string Name { get; set; } = string.Empty;

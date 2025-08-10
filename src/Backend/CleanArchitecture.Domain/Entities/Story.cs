@@ -2,7 +2,7 @@
 
 namespace CleanArchitecture.Domain.Entities;
 
-public class Story : IEntity<Guid>
+public class Story : IEntity<Story>
 {
 	public Guid Id { get; set; } = Guid.NewGuid();
 

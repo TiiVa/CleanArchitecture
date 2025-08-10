@@ -5,58 +5,97 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CleanArchitecture.Infrastructure.Repositories;
 
-public class DocumentRepository(ApplicationDbContext context) : IDocumentRepository
+public class DocumentRepository : IDocumentRepository
 {
-	public async Task<IEnumerable<Document>> GetAllAsync()
-	{
-		return await context.Documents.ToListAsync();
-	}
+    private readonly ApplicationDbContext _context;
+    
 
-	public async Task<Document> GetByIdAsync(Guid id)
-	{
-		var document = await context.Documents.FirstOrDefaultAsync(d => d.Id == id);
-		if (document == null)
-		{
-			return new Document();
-		}
+    public DocumentRepository(ApplicationDbContext context)
+    {
+        _context = context;
+       
+    }
+    public async Task<IEnumerable<Document>> GetAllAsync()
+    {
+        var documents = await _context.Documents
+            .Include(d => d.Resource)
+            .Include(x => x.ApplicationUser)
+            .ToListAsync();
 
-		return document;
-	}
+        return documents;
+    }
+    public async Task<Document> GetByIdAsync(Guid id)
+    {
+        var document = await _context.Documents
+            .Include(d => d.Resource)
+            .Include(x => x.ApplicationUser)
+            .Where(d => d.Id == id).FirstOrDefaultAsync();
 
-	public async Task AddAsync(Document entity)
-	{
-		await context.Documents.AddAsync(entity);
+        if (document is null) return new Document();
 
-		await context.SaveChangesAsync();
-	}
+        return document;
+    }
 
-	public async Task UpdateAsync(Document entity, Guid id)
-	{
-		var documentToUpdate = await context.Documents.FirstOrDefaultAsync(d => d.Id == id);
-		var resource = await context.Resources.FirstOrDefaultAsync(r => r.Id == entity.ResourceId);
-		
-		// Behöver hämta applicationUser med hjälp av UserHandler?
+    public async Task<bool> AddAsync(Document entity)
+    {
+        var newDocument = await _context.Documents.AddAsync(entity);
 
-		documentToUpdate.Name = entity.Name;
-		documentToUpdate.Description = entity.Description;
-		documentToUpdate.Type = entity.Type;
-		documentToUpdate.File = entity.File;
-		documentToUpdate.FileLocation = entity.FileLocation;
-		documentToUpdate.ResourceId = entity.ResourceId;
-		documentToUpdate.Resource = entity.Resource;
-		documentToUpdate.ApplicationUserId = entity.ApplicationUserId;
-		documentToUpdate.ApplicationUser = entity.ApplicationUser;
+        if (newDocument is null) return false;
 
-		await context.SaveChangesAsync();
+        return true;
+    }
 
-	}
+    public async Task<bool> UpdateAsync(Document entity, Guid id)
+    {
+        var documentToUpdate = await _context.Documents.FirstOrDefaultAsync(d => d.Id == id);
 
-	public async Task DeleteAsync(Guid id)
-	{
-		var documentToDelete = await context.Documents.FirstOrDefaultAsync(e => e.Id == id);
+        if (documentToUpdate is null) return false;
 
-		context.Documents.Remove(documentToDelete);
+        documentToUpdate.Name = entity.Name;
+        documentToUpdate.Description = entity.Description;
+        documentToUpdate.Type = entity.Type;
 
-		await context.SaveChangesAsync();
-	}
+        if (entity.File is not null)
+        {
+            documentToUpdate.File = entity.File;
+        }
+
+        return true;
+    }
+
+    public async Task<bool> RemoveAsync(Guid id)
+    {
+        var documentToDelete = await _context.Documents.FirstOrDefaultAsync(d => d.Id == id);
+
+        if (documentToDelete is null) return false;
+
+        _context.Documents.Remove(documentToDelete);
+
+        return true;
+    }
+
+    public async Task<List<Document>> GetDocumentsByResourceId(Guid resourceId)
+    {
+        var documents = await _context.Documents
+            .Include(x => x.ApplicationUser)
+            .Include(x => x.Resource)
+            .Where(x => x.Resource.Id.Equals(resourceId))
+            .ToListAsync();
+
+        return documents;
+    }
+
+    public async Task<List<Document>> GetImagesForUserByEventId(Guid eventId)
+    {
+        var documents = await _context
+            .Documents
+            .Include(document => document.Resource)
+            .ThenInclude(resource => resource.EventResources)
+            .ThenInclude(eventResource => eventResource.Event)
+            .Where(document => document.Resource.EventResources.Any(eventResource => eventResource.EventId.Equals(eventId) && eventResource.Event.IsVisibleToUser))
+            .ToListAsync();
+
+
+        return documents;
+    }
 }

@@ -1,6 +1,9 @@
 ﻿namespace CleanArchitecture.Application.Interfaces;
 
-public interface IUnitOfWork
+public interface IUnitOfWork : IDisposable
 {
-	
+	TEntity CreateRepository<TEntity>() where TEntity : class;
+
+	Task CompleteAsync();
+
 }

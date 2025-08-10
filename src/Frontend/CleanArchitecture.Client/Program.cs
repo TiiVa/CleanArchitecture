@@ -50,21 +50,21 @@ namespace CleanArchitecture.Client
 
 			var app = builder.Build();
 
-			app.MapGet("/documents", async (IDocumentRepository repo) =>
-			{
-				var documents =  await repo.GetAllAsync();
-				return documents;
-			});
-			app.MapGet("/documents/{id}", async (IDocumentRepository repo, Guid id) =>
-			{
-				var document = await repo.GetByIdAsync(id);
-				return document;
-			});
-			app.MapPost("/documents", async (IDocumentRepository repo, DocumentDto newDocument) =>
-			{
-				var newDoc = newDocument.ConvertToModel();
-				await repo.AddAsync(newDoc);
-			});
+			//app.MapGet("/documents", async (IDocumentRepository repo) =>
+			//{
+			//	var documents =  await repo.GetAllAsync();
+			//	return documents;
+			//});
+			//app.MapGet("/documents/{id}", async (IDocumentRepository repo, Guid id) =>
+			//{
+			//	var document = await repo.GetByIdAsync(id);
+			//	return document;
+			//});
+			//app.MapPost("/documents", async (IDocumentRepository repo, DocumentDto newDocument) =>
+			//{
+			//	var newDoc = newDocument.ConvertToModel();
+			//	await repo.AddAsync(newDoc);
+			//});
 
 			// Configure the HTTP request pipeline.
 			if (app.Environment.IsDevelopment())
