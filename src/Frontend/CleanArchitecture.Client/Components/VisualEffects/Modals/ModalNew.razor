@@ -1,0 +1,56 @@
+﻿<div class="modal" tabindex="-1" style="display: block;backdrop-filter: blur(1px)" role="dialog" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable @(FullscreenModal ? "modal-fullscreen" : LargeModal ? "modal-xl" : MediumModal ? "modal-lg" : "")">
+        <div class="modal-content">
+            @if (ShowModalHeader)
+            {
+                <div class="modal-header">
+                    <h1 class="modal-title">@Title@RenderFragmentTitle</h1>
+                    <p class="text-muted ms-5 mt-3">@SecondaryTitle</p>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="@OnCancel"></button>
+                </div>
+            }
+            <div class="modal-body">
+                @ModalBody
+            </div>
+            <div class="@(ShowModalFooter ? "modal-footer" : "")">
+                @ModalFooter
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public RenderFragment RenderFragmentTitle { get; set; }
+
+    [Parameter]
+    public string SecondaryTitle { get; set; } = string.Empty;
+
+    [Parameter]
+    public RenderFragment ModalBody { get; set; }
+
+    [Parameter]
+    public RenderFragment ModalFooter { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public bool FullscreenModal { get; set; }
+
+    [Parameter]
+    public bool LargeModal { get; set; }
+
+    [Parameter]
+    public bool MediumModal { get; set; }
+
+    [Parameter]
+    public bool ShowModalHeader { get; set; } = true;
+
+    [Parameter]
+    public bool ShowModalFooter { get; set; } = true;
+
+}

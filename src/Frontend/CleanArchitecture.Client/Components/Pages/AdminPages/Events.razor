@@ -1,0 +1,673 @@
+﻿@page "/Events"
+
+@using CleanArchitecture.Client.Components.VisualEffects.Buttons
+@using CleanArchitecture.Client.Components.VisualEffects.Modals
+@using CleanArchitecture.Client.Components.VisualEffects.Icons
+@using CleanArchitecture.Client.Components.VisualEffects.Animations
+
+@using Microsoft.AspNetCore.Authorization
+
+
+
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+
+
+@* TODO check Button class  *@
+
+
+<style>
+    .button-container {
+        display: flex;
+        gap: 5px; /* Mellanrum mellan knapparna */
+    }
+
+        .button-container Button { 
+            flex: 1; /* Gör att knapparna tar upp lika mycket utrymme */
+        }
+</style>
+
+@if (!ShowPreviewInvitation)
+{
+    <div class="bg-white full-height">
+        
+    <div class="p-3">
+
+        <div class="button-container">
+                <Button OnClick="OpenCreateEventModal" ButtonText="Create Event">
+                <ButtonIcon>
+                        <IconAdd Stroke="#fff" />
+                </ButtonIcon>
+            </Button>
+
+                <Button OnClick="GoToCreateInvitationForEvent" ButtonText="Create Invitation">
+                <ButtonIcon>
+                        <IconAdd Stroke="#fff" />
+                </ButtonIcon>
+            </Button>
+
+                <Button OnClick="GoToCreateStoryForEvent" ButtonText="Create Story for Event">
+                <ButtonIcon>
+                        <IconAdd Stroke="#fff" />
+                </ButtonIcon>
+            </Button>
+
+                <Button OnClick="OpenUpdateDocumentationModal" ButtonText="Edit Documentation for Event">
+                <ButtonIcon>
+                        <IconAdd Stroke="#fff" />
+                </ButtonIcon>
+            </Button>
+
+            </div>
+            </div>
+
+
+        @if (AllEvents != null && AllEvents.Count > 0)
+        {
+            <div class="table-responsive py-2">
+                <table class="table table-light table-hover table-striped">
+                    <thead>
+                    <tr>
+                        <th scope="col"></th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Date</th>
+                        <th style="font-size:small" scope="col">Visible to user</th>
+                        <th style="font-size:small" scope="col">Open for registration</th>
+                        <th scope="col">Invitation</th>
+                        <th scope="col">Participants</th>
+                        <th scope="col">Description</th>
+                        <th style="font-size:small" scope="col">Document folder</th>
+                        <th scope="col">Update</th>
+                        <th scope="col">Remove</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var eventDto in AllEvents)
+                    {
+                        <tr>
+                            <td>@(AllEvents.IndexOf(eventDto) + 1).</td>
+                            <td>@eventDto.EventName</td>
+                            <td>@eventDto.EventDate.ToString("yyyy-MM-dd")</td>
+
+                            <td>
+                                @if (eventDto.IsVisibleToUser)
+                                {
+                                    <IconCheckBox/>
+                                }
+                                else
+                                {
+                                    <IconEmptyCheckBox/>
+                                }
+                            </td>
+
+                            <td>
+                                @if (eventDto.OpenForRegistration)
+                                {
+                                        <IconCheckBox />
+                                }
+                                else
+                                {
+                                        <IconEmptyCheckBox />
+                                }
+                            </td>
+
+                            <td>
+                                @if (eventDto.InvitationId is not null)
+                                {
+                                    <btn class="btn btn-primary" style="font-size: 1rem;" @onclick="() => OpenPreviewInvitation(eventDto.InvitationId.Value)">
+                                        <span class="oi oi-envelope-closed"></span>
+                                    </btn>
+                                }
+                            </td>
+                            <td>
+                                    <Button OnClick=@(() => OpenParticipantsModal(eventDto))>
+                                    <ButtonIcon>
+                                        <IconGroup/>
+                                        <span class="badge bg-info text-dark">@(eventDto.EventRegistrationForms.Count)</span>
+                                    </ButtonIcon>
+                                </Button>
+                            </td>
+                            <td>
+                                    <Button OnClick=@(() => OpenMessageModal(eventDto.EventDescription))>
+                                    <ButtonIcon>
+                                        <div class="oi oi-menu"></div>
+                                    </ButtonIcon>
+                                </Button>
+                            </td>
+                            <td>
+
+                                    <Button OnClick=@(() => OpenResourcesModal(eventDto))>
+                                    <ButtonIcon>
+                                        <div class="oi oi-briefcase"></div>
+                                        <span class="badge bg-info text-dark">@(eventDto.Resources.Count)</span>
+                                    </ButtonIcon>
+                                </Button>
+                            </td>
+                            <td>
+                                    <Button OnClick=@(() => OpenUpdateEventModal(eventDto))>
+                                    <ButtonIcon>
+                                            <IconEdit />
+                                    </ButtonIcon>
+                                </Button>
+                            </td>
+                            <td>
+                                    <Button OnClick=@(() => OpenConfirmDeletionModal(eventDto))>
+                                    <ButtonIcon>
+                                            <IconDelete Stroke="#fff" />
+                                    </ButtonIcon>
+                                </Button>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            if (IsLoadingEvents)
+            {
+                <Loading Class="m-3"></Loading>
+            }
+            else
+            {
+                <div class="table-responsive py-2">
+                    <table class="table table-light table-hover">
+                        <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Date</th>
+                            <th scope="col" style="font-size:small">Visible to user</th>
+                            <th scope="col" style="font-size:small">Open for registration</th>
+                            <th scope="col">Invitation</th>
+                            <th scope="col">Participants</th>
+                            <th scope="col">Description</th>
+                            <th scope="col" style="font-size:small">Document folder</th>
+                            <th scope="col">Update</th>
+                            <th scope="col">Remove</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td colspan="11">No Events found</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+        }
+
+    </div>
+
+    @if (ShowUpdateEventModal)
+    {
+        <EditForm Model="EventDto" OnValidSubmit="UpdateEventInDbAsync">
+            <DataAnnotationsValidator />
+            <ModalNew MediumModal="true" OnCancel="CloseUpdateEventModal" Title="Update">
+                <ModalBody>
+                    <div class="mb-3">
+                        <label for="EventName" class="form-label">Name</label>
+                        <input @bind="@EventDto.EventName" type="text" class="form-control" id="EventName" />
+                        <ValidationMessage For="() => EventDto.EventName" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="EventDate" class="form-label">Date</label>
+                        <input type="date" @bind="@EventDto.EventDate" class="form-control" id="EventDate" style="width:auto" />
+                        <ValidationMessage For="() => EventDto.EventDate" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="EventDescription" class="form-label">Description</label>
+                        <textarea @bind="@EventDto.EventDescription" class="form-control" id="EventDescription" rows="4"></textarea>
+                        <ValidationMessage For="() => EventDto.EventDescription" />
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input @bind="@EventDto.OpenForRegistration" class="form-check-input" type="checkbox" value="" id="OpenForRegistration">
+                            <label class="form-check-label" for="OpenForRegistration">
+                                Open for registration
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input @bind="@EventDto.IsVisibleToUser" class="form-check-input" type="checkbox" value="" id="IsVisibleToUser">
+                            <label class="form-check-label" for="IsVisibleToUser">
+                                Visible to users
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" @bind="ResetParticipantsWhenUpdate" id="ResetParticipants">
+                                <label class="form-check-label" for="ResetParticipants">Reset participants</label>
+                            </div>
+                        </div>
+                    </div>
+                    @if (EventDto.InvitationId is not null)
+                    {
+                        <div class="mb-3">
+                            @*  <btn class="btn btn-primary" style="font-size: 1rem;" @onclick="() => UpdateInvitation(EventDto.InvitationId.Value)">
+                                <span class="oi oi-envelope-closed">Update invitation</span>
+                            </btn> *@
+
+
+                            <button type="button" class="btn btn-primary" @onclick="() => UpdateEventBeforeRedirectToUpdateInvitationPage(EventDto.EventId)">
+                                Update Invitation
+                            </button>
+
+                            <button type="button" class="btn btn-danger ms-2" @onclick="RemoveInvitationFromEventDto">
+                                Remove invitation
+                            </button>
+                        </div>
+                    }
+
+                    <div class="row">
+                        <div class="col-auto">
+                            <button type="button" class="btn btn-outline-primary" @onclick="OpenInvitationsModal">Add invitation</button>
+                        </div>
+                    </div>
+                    <ValidationSummary />
+                </ModalBody>
+
+                <ModalFooter>
+                    <Button Type="submit" Class="me-4">
+                        <ButtonIcon>
+                            <IconSave Height="25" Width="25" />
+                        </ButtonIcon>
+                    </Button>
+                    <Button ButtonText="Cancel" OnClick="@CloseUpdateEventModal"></Button>
+                </ModalFooter>
+
+            </ModalNew>
+        </EditForm>
+    }
+
+    @if (ShowCreateEventModal)
+    {
+        <EditForm Model="EventDto" OnValidSubmit="SaveEventToDbAsync">
+            <DataAnnotationsValidator/>
+            <ModalNew MediumModal="true" OnCancel="CloseCreateEventModal" Title="Create Event">
+                <ModalBody>
+
+                    <div class="mb-3">
+                        <label for="EventName" class="form-label">Name</label>
+                        <input @bind="@EventDto.EventName" type="text" class="form-control" id="EventName"/>
+                        <ValidationMessage For="() => EventDto.EventName"/>
+                    </div>
+                    <div class="mb-3">
+                        <label for="EventDate" class="form-label">Date</label>
+                        <input type="date" @bind="@EventDto.EventDate" class="form-control" id="EventDate" style="width:auto"/>
+                        <ValidationMessage For="() => EventDto.EventDate"/>
+                    </div>
+                    <div class="mb-3">
+                        <label for="EventDescription" class="form-label">Description</label>
+                        <textarea @bind="@EventDto.EventDescription" class="form-control" id="EventDescription" rows="4"></textarea>
+                        <ValidationMessage For="() => EventDto.EventDescription"/>
+                    </div>
+
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input @bind="@EventDto.OpenForRegistration" class="form-check-input" type="checkbox" value="" id="OpenForRegistration">
+                            <label class="form-check-label" for="OpenForRegistration">
+                                Open for registration
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input @bind="@EventDto.IsVisibleToUser" class="form-check-input" type="checkbox" value="" id="IsVisibleToUser">
+                            <label class="form-check-label" for="IsVisibleToUser">
+                                Visible to users
+                            </label>
+                        </div>
+                    </div>
+                    <ValidationSummary />
+
+                </ModalBody>
+
+                <ModalFooter>
+                    <Button Type="submit">
+                        <ButtonIcon>
+                            <IconSave Height="24" Width="24" />
+                        </ButtonIcon>
+                    </Button>
+                    <Button ButtonText="Cancel" OnClick="@CloseCreateEventModal"></Button>
+                </ModalFooter>
+
+            </ModalNew>
+        </EditForm>
+
+
+    }
+
+
+    
+    @if (ShowAllInvitationsModal)
+    {
+       <InvitationsModal Invitations="Invitations" OnCloseModal="CloseAddInvitationsModal">
+            <InsertButtons>
+                <div class="row g-0">
+                    <div class="col-auto m-1 ms-4">
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => SelectInvitationAndCloseModal(context.Id)">Select</button>
+                    </div>
+
+                    <div class="col-auto m-1 ms-3">
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenPreviewInvitation(context.Id)">Preview</button>
+                    </div>
+                </div>
+            </InsertButtons>
+        </InvitationsModal>
+    }
+
+    @if (ShowAllInvitationsModalForCreateEvent)
+    {
+        <InvitationsModal Invitations="Invitations" OnCloseModal="CloseAddInvitationsModalAndGoBack">
+            <InsertButtons>
+                <div class="row g-0">
+                    <div class="col-auto m-1 ms-4">
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => SelectInvitationAndCloseModalAndReturn(context.Id)">Select</button>
+                    </div>
+
+                    <div class="col-auto m-1 ms-3">
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenPreviewInvitation(context.Id)">Preview</button>
+                    </div>
+                </div>
+            </InsertButtons>
+        </InvitationsModal>
+    }
+    
+    @if (ShowSaveSettingsModal)
+    {
+        <ModalNew Title="Settings" OnCancel="CloseModalForSaveSettings" ShowModalFooter="false">
+            <ModalBody>
+                
+                <p>Would you like to add an Invitation to this Event?</p>
+
+                <button type="button" class="btn btn-primary" @onclick="OpenAddInvitationModal">Yes, Add an Invitation to this Event.</button>
+
+                <Button OnClick="CloseModalForSaveSettings" ButtonText="No, Im done for now."></Button>
+               
+            </ModalBody>
+        </ModalNew>
+    }
+    
+    @if (ShowAddInvitationModal)
+    {
+        <ModalNew Title="Options" OnCancel="CloseAddInvitationsModal" ShowModalFooter="true">
+            <ModalBody>
+               
+                <div class="row mb-3">
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-primary me-2" @onclick="OpenCreateInvitationForEventModal">Create an Invitation for this Event.</button> <hr/>
+                    </div>
+
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-primary me-2" @onclick="OpenAddInvitationToEventModal">Add Invitation to this Event.</button> <hr />
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-auto">
+                        @if (EventDto.InvitationId is not null)
+                        {
+                            <div class="mb-3">
+                                <button class="btn btn-primary" style=" font-size: 1rem">
+                                    <span class="oi oi-envelope-closed"></span>
+                                </button>
+                                <button class="btn btn-danger ms-2" @onclick="RemoveInvitationFromEventDto">Remove</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+               
+
+            </ModalBody>
+            <ModalFooter>
+                <Button OnClick="CloseAddInvitationsModal" ButtonText="Cancel"></Button>
+                @if (EventDto.InvitationId is not null)
+                {
+                    <Button OnClick="@UpdateEventInDbAsync" Class="me-4" ButtonText="Save">
+                        <ButtonIcon>
+                            <IconSave Height="25" Width="25" />
+                        </ButtonIcon>
+                    </Button>
+                }
+            </ModalFooter>
+        </ModalNew>
+
+       
+    }
+    
+    @if (ShowPublishEventModal)
+    {
+        <ModalNew OnCancel="ClosePublishEventModal" Title="Publish to News?" ShowModalFooter="false">
+            <ModalBody>
+                <div class="row">
+                    <div class="col-auto">
+                        <button class="btn btn-outline-primary" @onclick="RedirectToStories">Yes, I want to publish this Event. </button>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-auto">
+                        <button class="btn btn-outline-primary" @onclick="ClosePublishEventModal">No, I do that later. </button>
+                    </div>
+                </div>
+            </ModalBody>
+        </ModalNew>
+    }
+    
+}
+
+@if (ShowPreviewInvitation)
+{
+    <div class="row p-0 m-0">
+        <div class="col">
+            <button class="float-end btn btn-primary bg-eventsphere" @onclick="ClosePreviewInvitation"><IconBack></IconBack></button>
+        </div>
+    </div>
+
+    <InvitationPreviewModal Invitation="@Invitation"
+                            MailTo="@MailTo">
+    </InvitationPreviewModal>
+   
+}
+
+@if (ShowParticipantsModal)
+{
+
+    <ModalNew OnCancel="CloseParticipantModal" Title="Participants" MediumModal="true">
+        <ModalBody>
+
+            <div class="row">
+                <div class="col-auto">
+                    <label>Order by:</label>
+                </div>
+                <div class="col">
+                    <button class="btn-primary btn-sm" @onclick="() => EventDto.EventRegistrationForms = EventDto.EventRegistrationForms.OrderBy(x => x.FirstName).ToList()">name</button>
+                </div>
+                <div class="col text-end me-3">
+                    <button class="btn-primary btn-sm" @onclick="() => EventDto.EventRegistrationForms = EventDto.EventRegistrationForms.OrderBy(x => x.Company).ToList()">company</button>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col">
+                    <div class="bg-eventsphere my-2" style="height:4px;"></div>
+                </div>
+            </div>
+
+            <ul class="list-group list-group-flush">
+                @if (EventDto.EventRegistrationForms.Any())
+                {
+                    foreach (var participant in EventDto.EventRegistrationForms)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            @participant.FirstName @participant.FamilyName (@participant.Email)
+                            <span class="badge bg-primary rounded-pill">@participant.Company</span>
+                        </li>
+
+                    }
+                }
+                else
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        No participants yet.
+                    </li>
+                }
+            </ul>
+
+        </ModalBody>
+
+        <ModalFooter>
+            <Button ButtonText="Close" OnClick="@CloseParticipantModal"></Button>
+        </ModalFooter>
+
+    </ModalNew>
+}
+
+@if (ShowResourcesModal)
+{
+
+    <ModalNew OnCancel="@CloseResourcesModal" Title="Document folders" MediumModal="true">
+        <ModalBody>
+            @if (EventDto.Resources.Any())
+            {
+                foreach (var resource in EventDto.Resources)
+                {
+                    <div class="card">
+                        <div class="card-header">
+                            @resource.ResourceName
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">@resource.ResourceType</h5>
+                            <p class="card-text">@resource.ResourceDescription</p>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p>No document folders</p>
+            }
+        </ModalBody>
+
+        <ModalFooter>
+            <Button ButtonText="Close" OnClick="@CloseResourcesModal"></Button>
+        </ModalFooter>
+
+    </ModalNew>
+}
+
+@if (ShowConfirmDeletionModal)
+{
+    <ModalNew Title="Confirm deletion" OnCancel="CloseConfirmDeletionModal" ShowModalFooter="false">
+        <ModalBody>
+
+            <p>Stories connected to this Event will also be removed, wish to continue?</p>
+
+            <ButtonRed OnClick="() => DeleteEventFromDbAsync(EventDto)" ButtonText="Yes, Continue"></ButtonRed>
+
+            <Button OnClick="CloseConfirmDeletionModal" ButtonText="Cancel"></Button>
+
+        </ModalBody>
+    </ModalNew>
+}
+
+@if (ShowAddDocumentationModal)
+{
+
+
+    <ModalNew MediumModal="true" OnCancel="CloseUpdateDocumentationModel" Title="Add Documentation">
+        <ModalBody>
+            <div class="mb-3">
+                <label for="EventSelection" class="form-label">Select Event</label>
+                <select id="EventSelection" class="form-select" @onchange="EventSelectionChanged">
+                    <option value="">Select Event</option>
+                    @foreach (var x in AllEvents)
+                    {
+                        <option value="@x.EventId">@x.EventName</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="EventName" class="form-label">Name</label>
+                <input type="text" @bind="@EventDto.EventName" class="form-control" id="EventName" readonly />
+            </div>
+            <div class="mb-3">
+                <label for="EventDate" class="form-label">Date</label>
+                <input type="date" @bind="@EventDto.EventDate" class="form-control" id="EventDate" readonly />
+            </div>
+            <div class="mb-3">
+                <label for="EventDescription" class="form-label">Description</label>
+                <textarea @bind="@EventDto.EventDescription" class="form-control" id="EventDescription" rows="4" readonly></textarea>
+            </div>
+
+
+
+            @for (int i = 0; i < AmountOfResourceSelectionRows; i++)
+            {
+                var index = i;
+                <div class="mb-3">
+                    <div class="d-flex align-items-center">
+                        <select class="form-select" @onchange="e => SelectedResourceChanged(e, index)" style="width:auto">
+                            @for (int iu = 0; iu < AllResources.Count; iu++)
+                            {
+                                var resource = AllResources[iu];
+
+                                @if (IsResourceExistentInEvent(resource, index))
+                                {
+                                    <option value="@resource.ResourceId" selected>@resource.ResourceName</option>
+                                }
+                                else
+                                {
+                                    <option value="@resource.ResourceId">@resource.ResourceName</option>
+                                }
+                            }
+                        </select>
+                        <button class="btn btn-danger ms-2" @onclick="() => RemoveDocumentationFromEventDto(index)">
+                            <IconDelete Height="22" Width="22" Stroke="#fff"></IconDelete>
+                        </button>
+                    </div>
+                </div>
+            }
+
+
+            <div class="row mb-3">
+                <div class="col-auto">
+                    <button class="btn btn-outline-primary btn-sm" @onclick="IncreaseResourceListInEventDtoAndAddResourceSelectionRow">Add another document folder</button>
+                </div>
+            </div>
+        </ModalBody>
+
+        <ModalFooter>
+            <Button OnClick="@UpdateEventInDbAsync" Class="me-4">
+                <ButtonIcon>
+                    <IconSave Height="25" Width="25" />
+                </ButtonIcon>
+            </Button>
+            <Button ButtonText="Cancel" OnClick="@CloseUpdateDocumentationModel"></Button>
+        </ModalFooter>
+    </ModalNew>
+
+}
+
+
+@if (ShowMessageModal)
+{
+    <ModalNew OnCancel="CloseMessageModal" Title="Message">
+        <ModalBody>
+            @ModalMessage
+        </ModalBody>
+        <ModalFooter>
+            <Button ButtonText="Close" OnClick="@CloseMessageModal"></Button>
+        </ModalFooter>
+    </ModalNew>
+
+}

@@ -1,0 +1,10 @@
+﻿<a class="btn btn-outline-primary" @onclick="@OnClick">@ButtonIcon  @ButtonText</a>
+
+@code {
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+    [Parameter]
+    public RenderFragment ButtonIcon { get; set; }
+    [Parameter]
+    public string ButtonText { get; set; }
+}

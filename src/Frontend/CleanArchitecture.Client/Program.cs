@@ -1,95 +1,79 @@
-using CleanArchitecture.Application.DTOs;
-using CleanArchitecture.Application.DTOs.Converters;
-using CleanArchitecture.Application.Interfaces.RepositoryInterfaces;
 using CleanArchitecture.Client.Components;
 using CleanArchitecture.Client.Components.Account;
 using CleanArchitecture.Domain.Entities;
-using CleanArchitecture.Infrastructure.Data;
 using CleanArchitecture.Presentation;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+using Serilog;
 
-namespace CleanArchitecture.Client
+var builder = WebApplication.CreateBuilder(args);
+
+
+// Add services to the container.
+builder.Services.AddRazorComponents()
+	.AddInteractiveServerComponents();
+
+
+
+
+//Connects Frontend with Backend through Dependency Injection.
+builder.Services.AddPresentation(builder.Configuration);
+
+
+// Activates Serilog through Presentations Dependency Injection.
+builder.Services.AddLogging(loggingBuilder =>
 {
-	public class Program
-	{
-		public static void Main(string[] args)
-		{
-			var builder = WebApplication.CreateBuilder(args);
+	loggingBuilder.ClearProviders();
+	loggingBuilder.AddSerilog();
+});
 
-			// Add services to the container.
-			builder.Services.AddRazorComponents()
-				.AddInteractiveServerComponents();
 
-			builder.Services.AddPresentation(builder.Configuration);
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<IdentityUserAccessor>();
+builder.Services.AddScoped<IdentityRedirectManager>();
+builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
+//builder.Services.AddWMBSC();
 
-			builder.Services.AddCascadingAuthenticationState();
-			builder.Services.AddScoped<IdentityUserAccessor>();
-			builder.Services.AddScoped<IdentityRedirectManager>();
-			builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
-			builder.Services.AddAuthentication(options =>
-				{
-					options.DefaultScheme = IdentityConstants.ApplicationScheme;
-					options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-				})
-				.AddIdentityCookies();
+builder.Services.AddAuthentication(options =>
+{
+	options.DefaultScheme = IdentityConstants.ApplicationScheme;
+	options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
+})
+	.AddIdentityCookies();
 
-			var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-			builder.Services.AddDbContext<ApplicationDbContext>(options =>
-				options.UseSqlServer(connectionString));
-			builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+builder.Services.ConfigureApplicationCookie(options =>
+{
+	options.Cookie.Name = "CleanArchitecture";
+});
 
-			builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
-				.AddEntityFrameworkStores<ApplicationDbContext>()
-				.AddSignInManager()
-				.AddDefaultTokenProviders();
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-			builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
-			var app = builder.Build();
+var app = builder.Build();
 
-			//app.MapGet("/documents", async (IDocumentRepository repo) =>
-			//{
-			//	var documents =  await repo.GetAllAsync();
-			//	return documents;
-			//});
-			//app.MapGet("/documents/{id}", async (IDocumentRepository repo, Guid id) =>
-			//{
-			//	var document = await repo.GetByIdAsync(id);
-			//	return document;
-			//});
-			//app.MapPost("/documents", async (IDocumentRepository repo, DocumentDto newDocument) =>
-			//{
-			//	var newDoc = newDocument.ConvertToModel();
-			//	await repo.AddAsync(newDoc);
-			//});
-
-			// Configure the HTTP request pipeline.
-			if (app.Environment.IsDevelopment())
-			{
-				app.UseMigrationsEndPoint();
-			}
-			else
-			{
-				app.UseExceptionHandler("/Error");
-				// The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-				app.UseHsts();
-			}
-
-			app.UseHttpsRedirection();
-
-			app.UseStaticFiles();
-			app.UseAntiforgery();
-
-			app.MapRazorComponents<App>()
-				.AddInteractiveServerRenderMode();
-
-			// Add additional endpoints required by the Identity /Account Razor components.
-			app.MapAdditionalIdentityEndpoints();
-
-			app.Run();
-		}
-	}
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+	app.UseMigrationsEndPoint();
 }
+else
+{
+	app.UseExceptionHandler("/Error", createScopeForErrors: true);
+	// The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+	app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+
+app.UseStaticFiles();
+app.UseAntiforgery();
+
+app.MapRazorComponents<App>()
+	.AddInteractiveServerRenderMode();
+
+// Add additional endpoints required by the Identity /Account Razor components.
+app.MapAdditionalIdentityEndpoints();
+
+app.Run();

@@ -1,0 +1,81 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using CleanArchitecture.Application.DTOs
+@using CleanArchitecture.Client.Components.VisualEffects.Buttons
+<ModalNew Title="Invitations" LargeModal="true" OnCancel="@OnCloseModal">
+    <ModalBody>
+        <h2>Upcoming</h2>
+        <Virtualize Items="Invitations" Context="inv">
+            @if (inv.EventIntroduction == "SkipThisToShowWhichInvitationsHavePassed")
+            {
+                <div class="row mb-2">
+                    <div class="row">
+                        <div class="bg-eventsphere ms-2" style="height:5px;"></div>
+                    </div>
+                </div>
+                <h2>Passed</h2>
+            }
+            else
+            {
+                <div class="row mb-2">
+                    @if (!Invitations[0].Id.Equals(inv.Id))
+                    {
+                        <div class="row">
+                            <div class="bg-eventsphere ms-2" style="height:5px;"></div>
+                        </div>
+                    }
+                    <div class="row mt-2">
+                        <div class="col-auto p-0 m-1 text-center" style="width:10vw">
+                            @if (inv.PictureFile is not null)
+                            {
+                                @switch (inv.FileFormat)
+                                {
+                                    case "image/jpeg" or "image/png":
+                                        <img style="height:7vh; max-width:10vw" src="data:;base64,@Convert.ToBase64String(inv.PictureFile)" alt="Image" />
+                                        break;
+                                    case "application/pdf":
+                                        <iframe style="height:7vh; max-width:10vw" src="data:application/pdf;base64,@Convert.ToBase64String(inv.PictureFile)" alt="Image"></iframe>
+                                        break;
+                                    case "image/svg+xml":
+                                        <img style="height:7vh; max-width:10vw" src="data:image/svg+xml;base64,@Convert.ToBase64String(inv.PictureFile)" alt="Image" />
+                                        break;
+                                }
+                            }
+
+                        </div>
+                        <div class="p-0 ms-1" style="width:180px">
+                            <label><span class="text-muted">Start: </span>@inv.EventStartAt.ToString("yyyy-MM-dd HH:mm")</label>
+                            <label><span class="text-muted">Slut: &nbsp;</span>@inv.EventEndAt.ToString("yyyy-MM-dd HH:mm")</label>
+                        </div>
+                        <div class="col-auto">
+                            <label><span class="text-muted">Plats: </span>@inv.EventLocation</label>
+                        </div>
+                        <div class="col-auto pe-0">
+                            <label class="text-muted ">Intro:&nbsp;</label>
+                        </div>
+                        <div class="col ps-0 text-truncate text-wrap" style="height:9vh">
+                            <label>@inv.EventIntroduction</label>
+                        </div>
+                    </div>
+
+                    @InsertButtons(inv)
+
+                </div>
+            }
+        </Virtualize>
+    </ModalBody>
+    <ModalFooter>
+        <Button OnClick="@OnCloseModal" ButtonText="Close"></Button>
+    </ModalFooter>
+
+</ModalNew>
+
+@code {
+    [Parameter]
+    public List<InvitationDto> Invitations { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnCloseModal { get; set; }
+
+    [Parameter]
+    public required RenderFragment<InvitationDto> InsertButtons { get; set; }
+}

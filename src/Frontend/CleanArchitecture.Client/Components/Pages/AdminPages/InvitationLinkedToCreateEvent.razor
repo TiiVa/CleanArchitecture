@@ -1,0 +1,224 @@
+﻿@page "/InvitationForEvent{EventIdFromParameter}"
+
+@using Microsoft.AspNetCore.Authorization
+@using CleanArchitecture.Client.Components.VisualEffects.Modals
+@using CleanArchitecture.Client.Components.VisualEffects.Icons
+@using CleanArchitecture.Client.Components.VisualEffects.Buttons
+
+
+
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+
+@if (!ShowInvitationPreview)
+{
+    <div class="bg-white full-height p-3">
+
+        <h5 class="mb-3">Invitation for event</h5>
+
+        <div class="row">
+            <div class="col-8">
+
+                <EditForm Model="Invitation" OnValidSubmit="SaveInvitation">
+                    <DataAnnotationsValidator/>
+                    
+                    <div class="row">
+                        <div class="col">
+                            <p>
+                                <label class="form-label">Image</label>
+                                <InputFile class="form-control" style="width:auto" OnChange="@HandleFileUpload" accept=".png,.jpg,.svg,.pdf"></InputFile>
+                            </p>
+                        </div>
+                        <div class="col float-start">
+                            @if (Invitation.PictureFile is not null)
+                            {
+                                @switch (Invitation.FileFormat)
+                                {
+                                    case "image/jpeg" or "image/png":
+                                        <img style="height:8vh; max-width:10vw" src="data:;base64,@Convert.ToBase64String(Invitation.PictureFile)" alt="Image" />
+                                        break;
+                                    case "application/pdf":
+                                        <iframe style="height:8vh; max-width:10vw" src="data:application/pdf;base64,@Convert.ToBase64String(Invitation.PictureFile)"></iframe>
+                                        break;
+                                    case "image/svg+xml":
+                                        <img style="height:8vh; max-width:10vw" src="data:image/svg+xml;base64,@Convert.ToBase64String(Invitation.PictureFile)" />
+                                        break;
+                                }
+                            }
+                        </div>
+
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-auto">
+                            <label class="form-label">Start</label>
+                            <InputDate Type="InputDateType.DateTimeLocal" class="form-control" style="width:auto" @bind-Value="Invitation.EventStartAt"></InputDate>
+                            <ValidationMessage For="() => Invitation.EventStartAt"></ValidationMessage>
+                        </div>
+
+                        <div class="col">
+                            <label class="form-label">End</label>
+                            <InputDate Type="InputDateType.DateTimeLocal" class="form-control" style="width:auto" @bind-Value="Invitation.EventEndAt"></InputDate>
+                            <ValidationMessage For="() => Invitation.EventEndAt"></ValidationMessage>
+                        </div>
+
+                        @if (Invitation.PictureFile is not null)
+                        {
+                            <div class="col">
+                                <div style="height:3.3vh"></div>
+                                <button type="button" class="btn btn-outline-danger btn-sm" @onclick="DeletePictureDataFromInvitation">remove picture</button>
+                            </div>
+                        }
+
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-auto pe-0">
+                            <InputCheckbox id="showWelcomeTextCheckbox" class="form-check-input" @bind-Value="Invitation.ShowWelcomeText"></InputCheckbox>
+                        </div>
+                        <div class="col text-start">
+                            <label for="showWelcomeTextCheckbox" class="form-check-label">Show footer <span class="text-muted">with welcome text and register button</span></label>
+                        </div>
+                    </div>
+
+
+                    <div class="row">
+                        <div class="col">
+                            <p>
+                                <label class="form-label">Contact info <span class="text-muted">name & phone number</span></label>
+                                <InputText class="form-control" style="width:32vw" @bind-Value="Invitation.ContactInfo"></InputText>
+                                <ValidationMessage For="() => Invitation.ContactInfo"/>
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+                        <div class="col">
+                            <p>
+                                <label class="form-label">Contact email</label>
+                                <InputText class="form-control" style="width:32vw" @bind-Value="Invitation.ContactEmail"></InputText>
+                                <ValidationMessage For="() => Invitation.ContactEmail"/>
+                            </p>
+                        </div>
+                    </div>
+
+
+                    <div class="row">
+                        <div class="col">
+                            <p>
+                                <label class="form-label">Location</label>
+                                <InputText class="form-control" style="width:32vw" @bind-Value="Invitation.EventLocation"></InputText>
+                                <ValidationMessage For="() => Invitation.EventLocation"></ValidationMessage>
+                            </p>
+                        </div>
+                    </div>
+
+                    <p class="mb-5">
+                        <label class="form-label">Introduction</label>
+                        <InputTextArea rows="8" class="form-control" @bind-Value="Invitation.EventIntroduction"></InputTextArea>
+                    </p>
+
+                    @for (int i = 0; i < Invitation.Sections.Count; i++)
+                    {
+                        var index = i;
+                        Invitation.Sections[index].SectionDisplayNumber = index;
+
+                        <div class="mb-5">
+
+                            <h5>Section @(index + 1)</h5>
+                            <p>
+                                <label class="form-label">Header</label>
+                                <InputText class="form-control" @bind-Value="Invitation.Sections[index].SectionHeader"></InputText>
+                            </p>
+                            <p>
+                                <label class="form-label">Text body</label>
+                                <InputTextArea rows="8" class="form-control" @bind-Value="Invitation.Sections[index].SectionBody"></InputTextArea>
+                            </p>
+                            <div class="row">
+                                <div class="col">
+                                    <label class="form-label">Hyperlink</label>
+                                    <Input class="form-control" value="@Invitation.Sections[index].HyperLink" @oninput="(e) => CheckHyperlinkForIncorrectFormat(e, index)" />
+
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">Link header</label>
+                                    <InputText class="form-control" @bind-Value="Invitation.Sections[index].HyperLinkHeader"></InputText>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-sm btn-outline-danger mt-3" type="button" @onclick="() => RemoveSection(Invitation.Sections[index].Id)">Remove</button>
+
+                        </div>
+                    }
+                    <Button Class="float-end mb-4" Type="button" ButtonText="Add section" OnClick="@AddSection"></Button>
+
+                    <Button Class="float-end mb-4 me-2" Type="submit">
+                        <ButtonIcon>
+                            <IconSave Height="20" Width="20" />
+                        </ButtonIcon>
+                    </Button>
+
+                    <ValidationSummary />
+                </EditForm>
+            </div>
+
+            <div class="col">
+
+                <div class="row mb-3">
+
+                    <div class="col-auto">
+                        <Button Type="button" OnClick="() => OpenPreviewInvitation(null)" ButtonText="Preview"></Button>
+                    </div>
+
+                    <div class="col float-start">
+                        <button type="button" class="btn btn-primary" @onclick="ResetForm"><IconResetReload Height="28" Width="28"></IconResetReload></button>
+                    </div>
+
+                </div>
+
+                <div class="row mb-5" style="height:50px">
+                    <div class="col-auto text-start">
+                        @if (SectionsWithWrongHyperlinkFormat.Any() || IsRegisterUrlWrongFormat())
+                        {
+                            <div class="bg-warning border border-danger rounded ps-2 pe-2 pt-1 pb-1">
+                                @if (IsRegisterUrlWrongFormat())
+                                {
+                                    <p class="m-0 p-0">Register button's URL is incorrectly formatted.</p>
+                                }
+                                @if (SectionsWithWrongHyperlinkFormat.Any())
+                                {
+                                    <p class="m-0 p-0">Section @GetSectionNumbersWithWrongHyperlinkFormat()'s hyperlink is in incorrect format.</p>
+                                }
+                                <p class="m-0 p-0">Begin hyperlinks with: "http://", "https://" or "ftp://"</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </div>
+}
+
+@if (ShowInvitationPreview)
+{
+    <div class="row p-0 m-0">
+        <div class="col">
+            <button class="float-end btn btn-primary bg-eventsphere" @onclick="ClosePreviewInvitation"><IconBack></IconBack></button>
+        </div>
+    </div>
+
+    <InvitationPreviewModal Invitation="@Invitation"
+                            MailTo="@MailTo">
+    </InvitationPreviewModal>
+
+    <div class="row p-0 m-0 mb-3">
+        <div class="col">
+            <button class="float-end btn btn-primary bg-eventsphere" @onclick="ClosePreviewInvitation"><IconBack></IconBack></button>
+        </div>
+    </div>
+}

@@ -1,0 +1,16 @@
+﻿<span class="badge bg-primary rounded-pill hover" style="@buttonStyle" @onclick="@OnClick">@ButtonIcon  @ButtonText</span>
+
+@code {
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+    [Parameter]
+    public RenderFragment ButtonIcon { get; set; }
+    [Parameter]
+    public string ButtonText { get; set; }
+    private string buttonStyle = "";
+
+    protected override void OnInitialized()
+    {
+
+    }
+}

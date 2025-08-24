@@ -4,7 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>aspnet-CleanArchitecture.Client-c06825bd-b9f6-427b-b0f3-47db2d8e048b</UserSecretsId>
+    <!--<UserSecretsId>aspnet-CleanArchitecture.Client-c06825bd-b9f6-427b-b0f3-47db2d8e048b</UserSecretsId>-->
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,8 +14,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.17" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.17" />
   </ItemGroup>
 
   <ItemGroup>

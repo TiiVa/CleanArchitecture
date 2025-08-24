@@ -1,0 +1,399 @@
+﻿@page "/viewEvents"
+@using System.Security.Claims
+@using CleanArchitecture.Application.DTOs.UserDtos
+@using CleanArchitecture.Presentation.FrontendService
+@using Microsoft.AspNetCore.Authorization
+@using CleanArchitecture.Client.Components.VisualEffects.Animations
+@using CleanArchitecture.Client.Components.VisualEffects.Modals
+@using FluentResults
+
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject MultiService MultiServices
+@inject NavigationManager NavigationManager
+@attribute [Authorize(Roles = "Admin, User")]
+
+@rendermode InteractiveServer
+
+
+
+<style>
+    .card {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transition: box-shadow 0.03s ease-in-out;
+
+        overflow: hidden; /* Lagt till denna och nedan*/
+        position: relative;
+    }
+
+        .card:hover {
+            box-shadow: 0 10px 16px rgba(0,0,0,0.2);
+        }
+
+    .container {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        background-color: white;
+    }
+    /* Header section with the top image */
+    .header {
+        flex: 0 1 auto;
+        text-align: center;
+        margin: 0; /* Ensure no margin around the header */
+        padding: 0; /* Ensure no padding around the header */
+    }
+    /* Main content section */
+    .main-content {
+        flex: 1 0 auto;
+        padding: 20px;
+        text-align: center;
+        background-color: transparent;
+        justify-content: center;
+    }
+
+    .column {
+        float: left;
+        padding: 10px;
+    }
+        /* Left and right column */
+        .column.side {
+            width: 25%;
+        }
+
+        /* Middle column */
+        .column.middle {
+            width: 50%;
+            justify-content: center;
+        }
+
+    /* Clear floats after the columns */
+    .row::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    .header-color {
+        background-color: #9a8fff;
+    }
+
+    .card span {
+        display: inline-block;
+        max-width: 100%;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+</style>
+
+
+
+<div class="container mb-5">
+
+    <header class="header mt-3">
+        <h1>EVENT*SPHERE EVENEMANG</h1> <hr />
+    </header>
+
+    <main class="main-content">
+        <div class="row">
+
+            <div class="column side"></div>
+
+            <div class="column middle">
+
+                @if (EventExists)
+                {
+
+
+                    @if (UpcomingEventExists)
+                    {
+
+                        <div class="card card-body justify-content-center border-eventsphere">
+
+                            <div class="card-text ">
+                                <h4>Kommande evenemang</h4>
+
+                                <div class="row mt-2 mb-4">
+
+                                    <div class="col">
+
+                                        <ol class="list-group list-group-numbered">
+                                            <Virtualize Items="UpcomingEvents" Context="anEvent">
+
+                                                <li @onclick="() => NavigateToInvitationForEvent(anEvent.Id)" type="button" class="list-group-item list-group-item-action d-flex flex-column flex-sm-row justify-content-between align-items-start">
+    
+                                                    <div class="ms-2 me-auto">
+                                                        <div class="fw-bold">@anEvent.Name</div>
+                                                        <span class="text-muted">@anEvent.Date.ToString("yyyy-MM-dd")</span>
+                                                    </div>
+    
+                                                    <div class="mt-2 mt-sm-0">
+                                                        <span class="badge bg-primary rounded-pill btn w-100 w-sm-auto text-center">Visa evenemang</span>
+                                                    </div>
+
+                                                </li>
+
+                                            </Virtualize>
+                                        </ol>
+
+
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            @if (IsLoadingEvents)
+                            {
+                                <Loading></Loading>
+                            }
+
+                                </div>
+                            }
+                           
+                 
+
+                }
+                @if (!EventExists)
+                {
+                            
+                    <div class="card mb-5">
+                        <div class="card-header text-center">
+                            <p>Hej och välkommen!</p>
+                        </div>
+                        <div class="card-img">
+                            <img src="images/keyboard.jpg" alt="EventSphere-logga" class="img-fluid"/>
+                        </div>
+                        <div class="card-footer">
+                            <p class="card-text"> Just nu finns det inga Evenemang att anmäla sig till, men titta gärna förbi senare!</p>
+                        </div>
+
+                    </div>
+                            
+                }
+             
+              
+            </div>
+
+
+            <div class="column side"></div>
+
+        </div>
+
+        <hr />
+
+        <div class="row">
+            <div class="column side"></div>
+
+            <div class="column middle">
+
+                @if (PastEventExists && UserHaveParticipatedOnEvent ||PastEventExists && CurrentUserAreAdmin)
+                {
+                    <div class="card card-body justify-content-center border-eventsphere">
+
+                        <div class="card-text">
+
+                            @if (PastEventExists)
+                            {
+                                <h4>Tidigare evenemang</h4>
+
+                                <div class="row mt-2 mb-4">
+
+                                    <div class="col">
+
+
+                                        <ol class="list-group list-group-numbered">
+                                            <Virtualize Items="PastEvents" Context="anEvent">
+
+                                                <li @onclick="() => NavigateToInvitationForEvent(anEvent.Id)" type="button" class="list-group-item list-group-item-action d-flex flex-column flex-sm-row justify-content-between align-items-start">
+    
+                                                    <div class="ms-2 me-auto">
+                                                        <div class="fw-bold">@anEvent.Name</div>
+                                                        <span class="text-muted">@anEvent.Date.ToString("yyyy-MM-dd")</span>
+                                                    </div>
+    
+                                                    <div class="mt-2 mt-sm-0">
+                                                        <span class="badge bg-primary rounded-pill btn w-100 w-sm-auto text-center">Visa evenemang</span>
+                                                    </div>
+
+                                                </li>
+
+                                            </Virtualize>
+                                        </ol>
+
+                                    </div>
+
+                                </div>
+                            }
+
+                        </div>
+
+                    </div>
+
+                }
+
+            </div>
+
+
+            <div class="column side"></div>
+        </div>
+
+
+
+    </main>
+
+</div>
+
+@if (ShowMessageModal)
+{
+    <ModalNew OnCancel="CloseModalMessage" Title="Message" ShowModalFooter="false">
+        <ModalBody>
+            @ModalMessage
+        </ModalBody>
+    </ModalNew>
+}
+@code
+{
+    private bool ShowMessageModal { get; set; }
+    private bool IsLoadingEvents { get; set; }
+    private bool UpcomingEventExists => UpcomingEvents.Any() && !IsLoadingEvents;
+    private bool PastEventExists => PastEvents.Any() && !IsLoadingEvents;
+    private bool EventExists => PastEvents.Any() || UpcomingEvents.Any() && !IsLoadingEvents;
+    private bool UserHaveParticipatedOnEvent { get; set; }
+    private bool CurrentUserAreAdmin { get; set; }
+
+    private string ModalMessage { get; set; } = string.Empty;
+    private List<EventSparseInfoDto> UpcomingEvents { get; set; } = new();
+    private List<EventSparseInfoDto> PastEvents { get; set; } = new();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+       
+        await GetAllEventsFromDbAsync();
+    }
+
+    private async Task GetAllEventsFromDbAsync()
+    {
+
+        try
+        {
+            IsLoadingEvents = true;
+            var response = new List<EventSparseInfoDto>();
+            var result = await MultiServices.EventService.GetEventsVisibleToUser();
+
+            if (result.IsFailed)
+            {
+                IsLoadingEvents = false;
+                OpenMessageModal(result.Errors.FirstOrDefault()?.Message ?? "Unknown error");
+                return;
+            }
+
+            response = result.Value;
+
+            await SortEventsIntoPastOrUpcomingCategory(response);
+        }
+        catch (Exception ex)
+        {
+            IsLoadingEvents = false;
+            OpenMessageModal($"Could not get events. \n{ex.Message}");
+
+        }
+
+    }
+
+    private async Task SortEventsIntoPastOrUpcomingCategory(List<EventSparseInfoDto> events)
+    {
+        var active = events
+            .Where(x => x.Date >= DateTime.Today)
+            .OrderBy(x => x.Date)
+            .ToList();
+
+
+        UpcomingEvents = active;
+
+
+        var past = events
+            .Where(x => x.Date < DateTime.Today)
+            .OrderByDescending(x => x.Date)
+            .ToList();
+
+        if (past.Any())
+        {
+
+            var currentUserClaims = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+
+            var getInfoForUser = currentUserClaims.User.Identity.Name;
+
+            var currentUser = await MultiServices.ApplicationUserService.GetUserByEmailAsync(getInfoForUser);
+
+            if (currentUser.IsFailed)
+            {
+                OpenMessageModal($"Could not find this user.");
+                return;
+            }
+
+            if (currentUserClaims.User.IsInRole("Admin"))
+            {
+                CurrentUserAreAdmin = true;
+                IsLoadingEvents = false;
+                PastEvents = past;
+            }
+            else
+            {
+
+                var registrationForms = await MultiServices.UserMeetingRegistrationFormService.GetAllAsync();
+                if (registrationForms.IsSuccess)
+                {
+
+                    List<Guid> userEvents = new();
+                    foreach (var user in registrationForms.Value)
+                    {
+                        if (user.Email == currentUser.Value.Email)
+                        {
+                            userEvents.Add(user.Event.EventId);
+                        }
+                    }
+
+                    var matchingEvents = past.Where(e => userEvents.Contains(e.Id)).ToList();
+                    if (matchingEvents is null)
+                    {
+                        OpenMessageModal($"No matching events found.");
+                        return;
+                    }
+
+                    PastEvents = matchingEvents;
+                    IsLoadingEvents = false;
+                    UserHaveParticipatedOnEvent = true;
+
+                }
+            }
+
+        }
+
+        IsLoadingEvents = false;
+    }
+    
+
+
+    private void NavigateToEvent(Guid eventId)
+    {
+        NavigationManager.NavigateTo($"/Event/{eventId}");
+    }
+
+    private void OpenMessageModal(string message)
+    {
+        ShowMessageModal = true;
+        ModalMessage = message;
+    }
+
+    private void CloseModalMessage()
+    {
+        ShowMessageModal = false;
+        ModalMessage = "";
+    }
+
+    private void NavigateToInvitationForEvent(Guid anEventId)
+    {
+        NavigationManager.NavigateTo($"/invitation/{anEventId}");
+    }
+}

@@ -1,0 +1,300 @@
+﻿@page "/stories"
+
+@using Microsoft.AspNetCore.Authorization
+@using CleanArchitecture.Client.Components.VisualEffects.Buttons
+@using CleanArchitecture.Client.Components.VisualEffects.Icons
+@using CleanArchitecture.Client.Components.VisualEffects.Animations
+@using CleanArchitecture.Client.Components.VisualEffects.Modals
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+
+<div class="row p-0 m-0">
+    <div class="col">
+        <button class="float-end btn btn-primary bg-eventsphere" @onclick="GoBackToEventPage"><IconBack></IconBack></button>
+    </div>
+</div>
+<div class="bg-white full-height">
+    
+  
+
+    @if (!loadingStories)
+    {
+        <div class="p-3">
+
+            <h5>Stories</h5>
+
+            <Button OnClick=@(async () => await CreateStory())>
+                <ButtonIcon>
+                    <IconAdd Stroke="white" />
+                </ButtonIcon>
+            </Button>
+
+        </div>
+    }
+
+    @if (StoryList != null && StoryList.Count > 0)
+    {
+        <div class="table-responsive py-2">
+            <table class="table table-light table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col"></th>
+                        <th scope="col">Header</th>
+                        <th scope="col">Created</th>
+                        <th scope="col">Active</th>
+                        <th scope="col">Public</th>
+                        <th scope="col">Created by</th>
+                        <th scope="col">ViewText</th>
+                        <th scope="col">Update</th>
+                        <th scope="col">Remove</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var story in StoryList)
+                    {
+                        <tr>
+                            <td>@(StoryList.IndexOf(story) + 1).</td>
+                            <td>@story.StoryHeading</td>
+                            <td>@story.StoryCreated.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>
+                                @if (story.ActiveStory)
+                                {
+                                    <IconCheckBox />
+                                }
+                                else
+                                {
+                                    <IconEmptyCheckBox />
+                                }
+                            </td>
+                            <td>
+                                @if (story.PublicStory)
+                                {
+                                    <IconCheckBox />
+                                }
+                                else
+                                {
+                                    <IconEmptyCheckBox />
+                                }
+                            </td>
+                            <td>@story.CreatedBy</td>
+                            <td>
+                                <Button OnClick=@(() => ViewStoryText(story.StoryId))>
+                                    <ButtonIcon>
+                                        <IconText />
+                                    </ButtonIcon>
+                                </Button>
+                            </td>
+                            <td>
+                                <Button OnClick=@(async () => await UpdateStory(story.StoryId))>
+                                    <ButtonIcon>
+                                        <IconEdit />
+                                    </ButtonIcon>
+                                </Button>
+                            </td>
+                            <td>
+                                <Button OnClick=@(() => DeleteStory(story.StoryId))>
+                                    <ButtonIcon>
+                                        <IconDelete Stroke="white" />
+                                    </ButtonIcon>
+                                </Button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        if (loadingStories)
+        {
+            <Loading Class="m-3"></Loading>
+        }
+        else
+        {
+            <div class="table-responsive py-2">
+                <table class="table table-light table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">StoryCreated</th>
+                            <th scope="col">StoryHeading</th>
+                            <th scope="col">ActiveStory</th>
+                            <th scope="col">PublicStory</th>
+                            <th scope="col">ApplicationUser</th>
+                            <th scope="col">Update</th>
+                            <th scope="col">Remove</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="7">No Stories found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+
+
+</div>
+
+@if (showUpdateStory && StoryToUpdate != null)
+{
+    <EventSphereModal>
+        <ModalHeaderTemplate>
+            <h3>Update story</h3>
+        </ModalHeaderTemplate>
+        <ModalBodyTemplate>
+            <div class=modal-body>
+                <div class="mb-3">
+                    <label for="StoryHeading" class="form-label">StoryHeading</label>
+                    <input @bind="@StoryToUpdate.StoryHeading" type="text" class="form-control" id="StoryHeading" />
+                </div>
+                <div class="mb-3">
+                    <label for="StoryText" class="form-label">StoryText</label>
+                    <textarea @bind="@StoryToUpdate.StoryText" class="form-control" id="StoryText"></textarea>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input @bind="@StoryToUpdate.ActiveStory" class="form-check-input" type="checkbox" value="" id="ActiveStory">
+                        <label class="form-check-label" for="ActiveStory" >
+                            ActiveStory
+                            <span class="text-muted"> - only logged-in users can see these stories</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check" hidden="@(!StoryToUpdate.ActiveStory)">
+                        <input @bind="@StoryToUpdate.PublicStory" class="form-check-input" type="checkbox" value="" id="PublicStory">
+                        <label class="form-check-label" for="PublicStory">
+                            PublicStory
+                            <span class="text-muted"> - all users can see these stories</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="Events" class="form-label">Events</label>
+                    <select class="form-select" @bind="@StoryToUpdate.EventId">
+                        @if (EventList != null && EventList.Count > 0)
+                        {
+                            @foreach (var eventItem in EventList)
+                            {
+                                if (eventItem != null)
+                                {
+                                    <option value="@eventItem.EventId">@eventItem.EventName</option>
+                                }
+                            }
+                        }
+                        else
+                        {
+                            <option value="" selected>No events found</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <Button ButtonText="Update" OnClick="@SaveUpdate">
+                    <ButtonIcon>
+                        <IconSave />
+                    </ButtonIcon>
+                </Button>
+                <Button ButtonText="Cancel" OnClick="@CancelUpdate"></Button>
+            </div>
+        </ModalBodyTemplate>
+    </EventSphereModal>
+}
+
+@if (showCreateStory && NewStory != null)
+{
+    <EditForm Model="NewStory" OnValidSubmit="SaveStory">
+        <DataAnnotationsValidator/>
+        <EventSphereModal>
+            <ModalHeaderTemplate>
+                <h3>Create story</h3>
+            </ModalHeaderTemplate>
+            <ModalBodyTemplate>
+                <div class=modal-body>
+                    <div class="mb-3">
+                        <label for="StoryHeading" class="form-label">StoryHeading</label>
+                        <input @bind="@NewStory.StoryHeading" type="text" class="form-control" id="StoryHeading" />
+                        <ValidationMessage For="() => NewStory.StoryHeading" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="StoryText" class="form-label">StoryText</label>
+                        <textarea @bind="@NewStory.StoryText" class="form-control" id="StoryText"></textarea>
+                        <ValidationMessage For="() => NewStory.StoryText" />
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input @bind="@NewStory.ActiveStory" class="form-check-input" type="checkbox" value="" id="ActiveStory">
+                            <label class="form-check-label" for="ActiveStory">
+                                ActiveStory
+                                <span class="text-muted"> - only logged-in users can see these stories</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check" hidden="@(!NewStory.ActiveStory)">
+                            <input @bind="@NewStory.PublicStory" class="form-check-input" type="checkbox" value="" id="PublicStory">
+                            <label class="form-check-label" for="PublicStory">
+                                PublicStory
+                                <span class="text-muted"> - all users can see these stories</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="Events" class="form-label">Events</label>
+                        <InputSelect class="form-select" @bind-Value="@NewStory.EventId" required>
+                            @if (EventList.Any())
+                            {
+                                <option value="" disabled selected>Choose an Event.</option>
+
+                                @foreach (var eventItem in EventList)
+                                {
+                                    if (eventItem != null)
+                                    {
+                                        <option value="@eventItem.EventId">@eventItem.EventName</option>
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                <option value=""disabled selected>No events found</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+                <ValidationSummary />
+                <div class="modal-footer">
+                    <Button Type="submit">
+                        <ButtonIcon>
+                            <IconSave Height="24" Width="24" />
+                        </ButtonIcon>
+                    </Button>
+                    <Button ButtonText="Cancel" OnClick="@CancelCreateStory"></Button>
+                </div>
+            </ModalBodyTemplate>
+        </EventSphereModal>
+
+    </EditForm>
+   
+}
+
+@if (showMessage)
+{
+    <EventSphereModal OnCancel="@CloseModalMessage">
+        <ModalHeaderTemplate>
+            <h3>Message</h3>
+        </ModalHeaderTemplate>
+        <ModalBodyTemplate>
+            <div class="modal-body">
+                @ModalMessage
+            </div>
+            <div class="modal-footer">
+                <Button ButtonText="Close" OnClick="@CloseModalMessage"></Button>
+            </div>
+        </ModalBodyTemplate>
+    </EventSphereModal>
+}
+

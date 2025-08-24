@@ -4,17 +4,75 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Event Sphere</title>
     <base href="/" />
     <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
+
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="CleanArchitecture.Client.styles.css" />
+
+    <link rel="stylesheet" href="css/open-iconic/font/css/open-iconic-bootstrap.min.css" />
+
     <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.8.1/slick-theme.min.css" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
     <HeadOutlet />
 </head>
 
 <body>
     <Routes />
+
+    <!-- Blazor JavaScript -->
     <script src="_framework/blazor.web.js"></script>
+
+    <!-- Carousel Init Script -->
+    <script>
+        $(document).ready(function () {
+            console.log("Initializing carousel");
+            $('.carousel').slick({
+                infinite: true,
+                slidesToShow: 1,
+                slidesToScroll: 1,
+                autoplay: true,
+                autoplaySpeed: 2000,
+                centerMode: true,
+                centerPadding: '0'
+            });
+        });
+    </script>
+
+
+    <script>
+        navigator.serviceWorker.register('service-worker.js', { updateViaCache: 'none' });
+    </script>
+    <script src="js/Utilities.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/slick-carousel/1.9.0/slick.min.js"></script>
+
+   
+    @* <script src="bootstrap/bootstrap.bundle.min.js"></script> *@
+
+    <script>
+
+          $(function () {
+          $('[data-toggle="tooltip"]').tooltip()
+        })
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+            popoverTriggerList.forEach(function (el) {
+                new bootstrap.Popover(el, {
+                    container: 'body'
+                });
+            });
+        });
+    </script>
+
+
+
 </body>
 
 </html>

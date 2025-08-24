@@ -1,0 +1,26 @@
+﻿<div class="modal" tabindex="-1" style="display: block;backdrop-filter: blur(1px);" role="dialog">
+    <div class="modal-dialog modal-dialog-scrollable @(LargeModal ? "modal-xl" : MediumModal ? "modal-lg" : "")">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-info">@ModalHeaderTemplate</h3>
+                <button type="button" class="close" @onclick="@OnCancel">
+                    <span aria-hidden="true">X</span>
+                </button>
+            </div>
+            @ModalBodyTemplate
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment ModalHeaderTemplate { get; set; }
+    [Parameter]
+    public RenderFragment ModalBodyTemplate { get; set; }
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+    [Parameter]
+    public bool LargeModal { get; set; }
+    [Parameter]
+    public bool MediumModal { get; set; }
+}

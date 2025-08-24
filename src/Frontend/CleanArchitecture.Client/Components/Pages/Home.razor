@@ -1,6 +1,237 @@
 ﻿@page "/"
+@using CleanArchitecture.Application.DTOs
+@using CleanArchitecture.Presentation.FrontendService
 
-<PageTitle>Home</PageTitle>
+@rendermode InteractiveServer
 
-<h1>Welcome to your new app!</h1>
 
+<div>
+    <style>
+        /* Container to hold the entire layout */
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: white;
+        }
+
+        /* Header section with the top image */
+        .header {
+            flex: 0 1 auto;
+            text-align: center;
+            margin: 0; /* Ensure no margin around the header */
+            padding: 0; /* Ensure no padding around the header */
+        }
+
+            .header img {
+                align-content: center;
+                width: 100%;
+                height: 10%;
+                display: block; /* Remove any extra space below the image */
+            }
+
+        /* Main content section */
+        .main-content {
+            flex: 1 0 auto;
+            padding: 20px;
+            text-align: center;
+            background-color: transparent;
+        }
+
+        .custom-carousel {
+            text-align: center;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+
+        .carousel-image {
+            max-height: 250px;
+            max-width: 100%;
+            border-radius: 10px;
+            object-fit: contain;
+        }
+
+        .carousel-controls {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .carousel-controls button {
+                padding: 8px 12px;
+                font-size: 18px;
+                cursor: pointer;
+            }
+    </style>
+
+</div>
+
+
+<div class="container mb-5">
+    <header class="header mt-3">
+        <h1>EVENT*SPHERE</h1>  <hr />
+        <img src="images/home.jpg" alt="Computer showing code">
+    </header>
+    <main class="main-content">
+
+        <p>
+            Vi arbetar sedan många år med att erbjuda moderna IT-stöd inom MES, SAP och CRM.<br />
+            Vi har ett team med erfarna verksamhetskonsulter som arbetat inom området längre än 40 år, vilket gett oss en bred erfarenhet inom området.<br />
+            Vi värdesätter riktigt långa kundrelationer och förblir en partner till kunden från projektstart och sedan över systemets hela livscykel.<br />
+            Vi finns på flera orter runt om i Sverige.<br /><br />
+
+            EventSphere har sedan 2003 tagit fram egenutvecklad programvara med ett antal olika moduler för att på bästa sätt kunna hjälpa våra kunder inom<br /> IT-stöd.
+            Dessa moduler samlar vi under namnet EventSphere modules.
+        </p>
+
+    </main>
+
+
+
+
+    <footer class="mb-5 mt-3">
+        @if (ShowInvitations)
+        {
+            <div class="custom-carousel">
+                <img src="data:@Invitations[currentSlide].FileFormat;base64,@Convert.ToBase64String(Invitations[currentSlide].PictureFile)"
+                     alt="Invitation Image"
+                     class="carousel-image"
+                     @onclick="() => NavigateToInvitation(currentSlide)" />
+
+                <div class="carousel-controls">
+                    <button class="btn btn-sm" @onclick="PreviousSlide">⟨</button>
+                    <span>@(currentSlide + 1) / @Invitations.Count</span>
+                    <button class="btn btn-sm" @onclick="NextSlide">⟩</button>
+                </div>
+
+            </div>
+        }
+
+    </footer>
+</div>
+
+<style>
+    .custom-carousel-img {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transition: box-shadow 0.03s ease-in-out;
+    }
+
+    .custom-carousel:hover {
+        box-shadow: 0 10px 16px rgba(0,0,0,0.2);
+    }
+</style>
+
+
+
+@code {
+
+    [Inject] NavigationManager NavigationManager { get; set; }
+
+
+    [Inject] MultiService MultiService { get; set; }
+
+
+    private List<InvitationDto> Invitations { get; set; } = new();
+
+    private bool ShowInvitations => Invitations.Count > 0;
+
+    private bool ShowMessageModal { get; set; }
+
+    private string MessageModal { get; set; } = string.Empty;
+    private int currentSlide;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var showInvitation = await GetInvitationForCarousel();
+        Invitations = showInvitation;
+
+    }
+
+    private void NextSlide()
+    {
+        currentSlide = (currentSlide + 1) % Invitations.Count;
+    }
+
+    private void PreviousSlide()
+    {
+        currentSlide = (currentSlide - 1 + Invitations.Count) % Invitations.Count;
+    }
+
+    public async Task<List<InvitationDto>> GetInvitationForCarousel()
+    {
+        List<InvitationDto> invitationSortingList;
+
+        try
+        {
+            var result = await MultiService.InvitationService.GetInvitationsForEventsOpenForRegistration();
+
+            if (result.IsFailed || !result.Value.Any())
+            {
+                return new List<InvitationDto>();
+            }
+
+            invitationSortingList = result.Value;
+
+        }
+        catch (Exception e)
+        {
+            OpenMessageModal(e.Message);
+            return new List<InvitationDto>();
+        }
+
+        var listOfInvitations = invitationSortingList
+            .Where(x => x.EventStartAt >= DateTime.Today && x.EventEndAt >= DateTime.Today)
+            .OrderBy(x => x.EventStartAt)
+            .ToList();
+
+        Invitations.AddRange(listOfInvitations);
+        return Invitations;
+    }
+
+
+
+    #region MessageModals
+
+    private void OpenMessageModal(string m)
+    {
+        MessageModal = m;
+        ShowMessageModal = true;
+    }
+    private void CloseMessageModal()
+    {
+        ShowMessageModal = false;
+    }
+
+    #endregion
+
+
+    private async Task NavigateToInvitation(int slideIndex)
+    {
+        var invitationId = Invitations[slideIndex].Id;
+
+        var getInv = await MultiService.InvitationService.GetInvitationById(invitationId);
+
+        if (getInv.IsFailed)
+        {
+            OpenMessageModal($"Could not get Invitation with this Id.");
+        }
+
+        var getEvent = await MultiService.EventService.GetAllEvents();
+        if (getEvent.IsFailed)
+        {
+            OpenMessageModal($"Could not get Event list.");
+        }
+        var foundEvent = getEvent.Value.FirstOrDefault(e => e.InvitationId == getInv.Value.Id);
+        if (foundEvent is null)
+        {
+            OpenMessageModal($"Could not find invitation in selected Event.");
+        }
+
+        NavigationManager.NavigateTo($"/invitation/{foundEvent.EventId}");
+    }
+
+
+}

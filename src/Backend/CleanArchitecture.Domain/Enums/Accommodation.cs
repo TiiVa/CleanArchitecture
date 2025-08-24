@@ -2,7 +2,7 @@
 
 public enum Accommodation
 {
-	None,
-	SingleRoom,
-	DoubleRoom
+	Inget,
+	Singelrum,
+	Dubbelrum
 }

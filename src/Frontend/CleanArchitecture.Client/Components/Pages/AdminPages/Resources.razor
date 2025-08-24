@@ -1,0 +1,689 @@
+﻿@page "/resources"
+
+@using CleanArchitecture.Domain.Enums
+@using Microsoft.AspNetCore.Authorization
+@using CleanArchitecture.Client.Components.VisualEffects.Buttons
+@using CleanArchitecture.Client.Components.VisualEffects.Icons
+@using CleanArchitecture.Client.Components.VisualEffects.Animations
+@using CleanArchitecture.Client.Components.VisualEffects.Modals
+@rendermode InteractiveServer
+@inject IJSRuntime Js
+@attribute [Authorize(Roles = "Admin")]
+
+
+<div class="bg-white full-height">
+
+    @if (!IsLoadingResources)
+    {
+        <div class="p-3">
+
+            <Button OnClick="@(() => OpenCreateResourceModal())">
+                <ButtonIcon>
+                    <IconAdd Stroke="white" /> New folder
+                </ButtonIcon>
+            </Button>
+
+            <Button OnClick="@(() => OpenCreateDocumentModal())">
+                <ButtonIcon>
+                    <IconAdd Stroke="white" />New document
+                </ButtonIcon>
+            </Button>
+
+        </div>
+    }
+
+    @if (AllResources.Any())
+    {
+
+        <table class="table table-striped table-hover table-light">
+            <thead>
+                <tr>
+                    <th scope="col"></th>
+                    <th scope="col"><small>Name</small></th>
+                    <th scope="col"><small>Created at</small></th>
+                    <th scope="col"><small>Created by</small></th>
+                    <th scope="col"><small>Context</small></th>
+                    <th scope="col"><small>Type</small></th>
+                    <th scope="col"><small>Description</small></th>
+                    <th scope="col"><small>Documents</small></th>
+                    <th scope="col"><small>Events</small></th>
+                    <th scope="col"><small>Update</small></th>
+                    <th scope="col"><small>Remove</small></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var resource in AllResources)
+                {
+                    <tr>
+                        <td><small>@(AllResources.IndexOf(resource) + 1).</small></td>
+
+                        <td><small>@resource.ResourceName</small></td>
+
+                        <td><small>@resource.CreatedAt.ToString("yyyy-MM-dd HH:mm")</small></td>
+
+                        <td><small>@resource.CreatedBy</small></td>
+
+                        <td><small>@resource.Context</small></td>
+
+                        <td><small>@resource.ResourceType</small></td>
+
+
+
+                        <td>
+                            <Button OnClick=@(() => OpenResourceDescriptionModal(resource))>
+                                <ButtonIcon>
+                                    <IconText />
+                                </ButtonIcon>
+                            </Button>
+                        </td>
+
+                        <td>
+                            <Button OnClick=@(() => OpenResourceDocumentsModal(resource))>
+                                <ButtonIcon>
+                                    <IconFile Fill="white" />
+                                    <span class="badge bg-info text-dark">@(resource.DocumentCount)</span>
+                                </ButtonIcon>
+                            </Button>
+                        </td>
+
+                        <td>
+                            <Button OnClick=@(() => OpenResourceEventsModal(resource))>
+                                <ButtonIcon>
+                                    <IconEvent Fill="white" />
+                                    <span class="badge bg-info text-dark">@(resource.Events.Count)</span>
+                                </ButtonIcon>
+                            </Button>
+                        </td>
+
+                        <td>
+                            <Button OnClick=@(() => OpenUpdateResourceModal(resource))>
+                                <ButtonIcon>
+                                    <IconEdit />
+                                </ButtonIcon>
+                            </Button>
+                        </td>
+
+                        <td>
+                            <Button OnClick=@(() => OpenConfirmDeletionModal(resource))>
+                                <ButtonIcon>
+                                    <IconDelete Stroke="white" />
+                                </ButtonIcon>
+                            </Button>
+                        </td>
+
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+    }
+    else
+    {
+        if (IsLoadingResources)
+        {
+            <Loading Class="m-3"></Loading>
+        }
+        else
+        {
+            <div class="table-responsive py-2">
+                <table class="table table-light table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col">Name</th>
+                            <th scope="col"><small>Created at</small></th>
+                            <th scope="col"><small>Created by</small></th>
+                            <th scope="col">Description</th>
+                            <th scope="col">Documents</th>
+                            <th scope="col">Events</th>
+                            <th scope="col">Update</th>
+                            <th scope="col">Remove</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="9">No document folder found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+
+</div>
+
+@if (ShowUpdateResourceModal)
+{
+    <ModalNew Title="Update document folder" OnCancel="CloseUpdateResourceModal">
+
+        <ModalBody>
+            <div class="mb-3">
+                <label for="ResourceName" class="form-label">Name</label>
+                <input @bind="@Resource.ResourceName" type="text" class="form-control" id="ResourceName" />
+            </div>
+
+            <div class="mb-3">
+                <label for="Context" class="form-label">Context</label>
+                <input type="text" @bind="@Resource.Context" class="form-control" id="Context" />
+            </div>
+
+            <div class="mb-3">
+                <label for="ResourceType" class="form-label">ResourceType</label>
+                <select class="form-select" @bind="@Resource.ResourceType">
+                    @foreach (var ResourceType in Enum.GetNames(typeof(ResourceType)))
+                    {
+                        if (Resource.ResourceType.ToString() == ResourceType)
+                        {
+                            <option value="@ResourceType" selected>@ResourceType</option>
+                        }
+                        else
+                        {
+                            <option value="@ResourceType">@ResourceType</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="ResourceDescription" class="form-label">Description</label>
+                <textarea @bind="@Resource.ResourceDescription" class="form-control" id="ResourceDescription"></textarea>
+            </div>
+        </ModalBody>
+
+        <ModalFooter>
+            <Button OnClick="@UpdateResourceInDbAsync">
+                <ButtonIcon>
+                    <IconSave Height="24" Width="24" />
+                </ButtonIcon>
+            </Button>
+            <Button ButtonText="Cancel" OnClick="@CloseUpdateResourceModal"></Button>
+        </ModalFooter>
+
+    </ModalNew>
+}
+
+@if (ShowCreateResourceModal)
+{
+    <EditForm Model="Resource" OnValidSubmit="AddResourceToDbAsync">
+        <DataAnnotationsValidator />
+        <ModalNew Title="Create document folder" OnCancel="CloseCreateResourceModal">
+            <ModalBody>
+
+                <div class="mb-3">
+                    <label for="ResourceName" class="form-label">Name</label>
+                    <input @bind="@Resource.ResourceName" type="text" class="form-control" id="ResourceName" />
+                    <ValidationMessage For="() => Resource.ResourceName" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="ResourceType" class="form-label">ResourceType</label>
+                    <select class="form-select" @bind="@Resource.ResourceType">
+                        <ValidationMessage For="() => Resource.ResourceType" />
+                        @foreach (var ResourceType in Enum.GetNames(typeof(ResourceType)))
+                        {
+                            if (Resource.ResourceType.ToString() == ResourceType)
+                            {
+                                <option value="@ResourceType" selected>@ResourceType</option>
+                            }
+                            else
+                            {
+                                <option value="@ResourceType">@ResourceType</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="ResourceDescription" class="form-label">Description</label>
+                    <textarea @bind="@Resource.ResourceDescription" class="form-control" id="ResourceDescription"></textarea>
+                    <ValidationMessage For="() => Resource.ResourceDescription" />
+                </div>
+
+                <ValidationSummary />
+
+            </ModalBody>
+
+            <ModalFooter>
+                <Button Type="submit">
+                    <ButtonIcon>
+                        <IconSave Height="24" Width="24" />
+                    </ButtonIcon>
+                </Button>
+                <Button ButtonText="Cancel" OnClick="@CloseCreateResourceModal"></Button>
+            </ModalFooter>
+
+        </ModalNew>
+
+    </EditForm>
+
+}
+@if (ShowCreateDocumentModal)
+{
+    <ModalNew Title="Create document" OnCancel="CloseCreateDocumentModal">
+
+        <ModalBody>
+            @if (IsLoadingResources || ResourceExists)
+            {
+                <EditForm Model="Document">
+                    <DataAnnotationsValidator></DataAnnotationsValidator>
+                    <ValidationSummary></ValidationSummary>
+
+                    <div class="mb-3">
+                        @if (ResourceExists && !IsLoadingResources)
+                        {
+                            <label for="Resources" class="form-label">Document folder</label>
+                            <InputSelect class="form-select" @bind-Value="@Document.Resource.ResourceId">
+
+
+                                @foreach (var resource in AllResources)
+                                {
+                                    <option value="@resource.ResourceId">@resource.ResourceName</option>
+                                }
+
+
+                            </InputSelect>
+
+                        }
+                        @if (IsLoadingResources)
+                        {
+                            <label><span class="spinner-border spinner-border-sm text-primary me-2"></span>Document folder</label>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="DocumentType" class="form-label">Type</label>
+                        <select class="form-select" id="DocumentType" @bind="@Document.FileType">
+                            @foreach (var documentType in Enum.GetNames(typeof(FileType)))
+                            {
+                                <option value="@documentType">@documentType</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="formFile" class="form-label">File</label>
+                        <InputFile OnChange="GetSelectedFileAsync" class="form-control" type="file" id="formFile" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="DocumentName" class="form-label">Filename <span class="text-muted">- will change file name if filled out</span></label>
+                        <InputText @bind-Value="Document.NewFileName" type="text" class="form-control" id="DocumentName" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="DocumentDescription" class="form-label">Description<span class="text-muted"> - optional. A good name is preferred</span></label>
+                        <InputTextArea @bind-Value="@Document.Description" class="form-control" id="DocumentDescription" />
+                    </div>
+
+                </EditForm>
+
+            }
+            @if (!IsLoadingResources && !ResourceExists)
+            {
+                <p>Create a document folder before creating a new document.</p>
+            }
+
+        </ModalBody>
+
+        <ModalFooter>
+
+            @if (IsLoadingResources || ResourceExists)
+            {
+                <Button OnClick="@AddDocumentToDbAsync">
+                    <ButtonIcon>
+                        <IconSave Height="24" Width="24" />
+                    </ButtonIcon>
+                </Button>
+            }
+
+            <Button ButtonText="Cancel" OnClick="@CloseCreateDocumentModal"></Button>
+        </ModalFooter>
+
+    </ModalNew>
+}
+
+@if (ShowUpdateDocumentModal)
+{
+    <ModalNew Title="Update document" OnCancel="CloseUpdateModal">
+        <ModalBody>
+
+            <div class="mb-3">
+
+                @if (ResourceExists && !IsLoadingResources)
+                {
+                    <label for="Resources" class="form-label">Document folder</label>
+
+                    <select class="form-select" @bind="@Document.Resource.ResourceId">
+                        @foreach (var resource in AllResources)
+                        {
+                            <option value="@resource.ResourceId">@resource.ResourceName</option>
+                        }
+                    </select>
+                }
+
+                @if (IsLoadingResources)
+                {
+                    <label><span class="spinner-border spinner-border-sm text-primary me-2"></span>Document folder</label>
+                }
+
+            </div>
+
+            <div class="mb-3">
+                <label for="DocumentType" class="form-label">Type</label>
+                <select class="form-select" id="DocumentType" @bind="@Document.FileType">
+                    @foreach (var documentType in Enum.GetNames(typeof(FileType)))
+                    {
+                        <option value="@documentType">@documentType</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="DocumentDescription" class="form-label">Description</label>
+                <textarea @bind="@Document.Description" class="form-control" id="DocumentDescription" />
+            </div>
+
+            <div class="mb-3">
+                <label for="formFile" class="form-label">File <span class="text-muted">- will not delete old file if left empty</span></label>
+                <InputFile OnChange="GetSelectedFileAsync" class="form-control" type="file" id="formFile" />
+
+            </div>
+
+            <div class="mb-3">
+                <label for="DocumentName" class="form-label">File name <span class="text-muted">- will change file name if filled out</span></label>
+                <input @bind="@Document.NewFileName" type="text" class="form-control" id="DocumentName" />
+            </div>
+
+        </ModalBody>
+
+        <ModalFooter>
+            <Button OnClick="@UpdateDocumentInDbAsync">
+                <ButtonIcon>
+                    <IconSave Height="24" Width="24" />
+                </ButtonIcon>
+            </Button>
+            <Button ButtonText="Cancel" OnClick="@CloseUpdateModal"></Button>
+        </ModalFooter>
+
+    </ModalNew>
+}
+
+@if (ShowConfirmDeletionModal)
+{
+    <ModalNew Title="Confirm deletion" OnCancel="CloseConfirmDeletionModal">
+        <ModalBody>
+
+            @if (Resource.DocumentCount > 0)
+            {
+                <p>
+                    Deletion of this document folder will also delete @Resource.DocumentCount @(Resource.DocumentCount == 1 ? "document" : "documents")
+                </p>
+                <p>
+                    To proceed with this action click on remove document
+                </p>
+            }
+
+        </ModalBody>
+
+        <ModalFooter>
+            @if (Resource.DocumentCount > 0)
+            {
+
+                <button class="btn btn-primary" @onclick="() => NavigateToOpenResourceDocumentsModal(Resource)">Remove Document</button>
+
+                <button class="btn btn-primary" @onclick="CloseConfirmDeletionModal">Cancel</button>
+
+
+            }
+            else
+            {
+                <button class="btn btn-danger me-3" @onclick="DeleteResourceAsync">Delete</button>
+            }
+
+        </ModalFooter>
+    </ModalNew>
+}
+
+@if (ShowMessageModal)
+{
+    <ModalNew OnCancel="CloseMessageModal" Title="Message">
+
+        <ModalBody>
+            @ModalMessage
+        </ModalBody>
+
+        <ModalFooter>
+            <Button ButtonText="Close" OnClick="@CloseMessageModal"></Button>
+        </ModalFooter>
+
+    </ModalNew>
+}
+
+@if (ShowDocumentsModal)
+{
+    <ModalNew LargeModal="true" OnCancel="@CloseDocumentsModal" Title="Documents">
+        <ModalBody>
+            <Button ButtonText="All" OnClick="@ShowAllDocuments"></Button>
+            <Button ButtonText="Documents" OnClick="@ShowOtherDocuments"></Button>
+            <Button ButtonText="Images" OnClick="@ShowImages"></Button>
+
+            <ul class="list-group mt-2">
+                @if (AllDocuments.Count == 0)
+                {
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            No documents yet.
+                        </li>
+                    }
+                }
+                @if (AllDocuments.Count > 0 && ShowAllDocumentsInDocumentsModal)
+                {
+
+                    foreach (var document in AllDocuments)
+                    {
+
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="p-2">
+                                <div class="p-2">@document.FileName</div>
+                                <small class="muted p-2" style="flex:1;">@document.FileType</small>
+                            </div>
+
+                            <div class="ml-auto p-2">
+
+                                @if (string.IsNullOrEmpty(document.Description))
+                                {
+                                    <DescriptionButton Class="me-1" Type="button" Title="No description available">
+                                        <ButtonIcon>
+                                            <IconText />
+                                        </ButtonIcon>
+                                    </DescriptionButton>
+                                }
+                                else
+                                {
+                                    <DescriptionButton Class="me-1" Type="button" Title=@document.Description>
+                                        <ButtonIcon>
+                                            <IconText />
+                                        </ButtonIcon>
+                                    </DescriptionButton>
+                                }
+
+                                <Button OnClick=@(() => DownloadDocumentAsync(document))>
+                                    <ButtonIcon>
+                                        <IconDownload />
+                                    </ButtonIcon>
+                                </Button>
+
+                                <Button OnClick=@(() => OpenUpdateDocumentModal(document))>
+                                    <ButtonIcon>
+                                        <IconEdit />
+                                    </ButtonIcon>
+                                </Button>
+
+                                <Button OnClick=@(() => DeleteDocumentAsync(document))>
+                                    <ButtonIcon>
+                                        <IconDelete Stroke="white" />
+                                    </ButtonIcon>
+                                </Button>
+                            </div>
+
+                        </li>
+
+
+
+                    }
+                }
+                @if (ShowImagesInDocumentsModal)
+                {
+                    foreach (var image in Images)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="p-2">
+                                <div class="p-2">@image.FileName</div>
+                                <small class="muted p-2" style="flex:1;">@image.FileType</small>
+                            </div>
+
+                            <div class="ml-auto p-2">
+
+                                @if (string.IsNullOrEmpty(image.Description))
+                                {
+                                    <DescriptionButton Class="me-1" Type="button" Title="No description available">
+                                        <ButtonIcon>
+                                            <IconText />
+                                        </ButtonIcon>
+                                    </DescriptionButton>
+                                }
+                                else
+                                {
+                                    <DescriptionButton Class="me-1" Type="button" Title=@image.Description>
+                                        <ButtonIcon>
+                                            <IconText />
+                                        </ButtonIcon>
+                                    </DescriptionButton>
+                                }
+
+                                <Button OnClick=@(() => DownloadDocumentAsync(image))>
+                                    <ButtonIcon>
+                                        <IconDownload />
+                                    </ButtonIcon>
+                                </Button>
+
+                                <Button OnClick=@(() => OpenUpdateDocumentModal(image))>
+                                    <ButtonIcon>
+                                        <IconEdit />
+                                    </ButtonIcon>
+                                </Button>
+
+                                <Button OnClick=@(() => DeleteDocumentAsync(image))>
+                                    <ButtonIcon>
+                                        <IconDelete Stroke="white" />
+                                    </ButtonIcon>
+                                </Button>
+                            </div>
+
+                        </li>
+
+                    }
+                }
+                @if (ShowOtherInDocumentsModal)
+                {
+                    foreach (var otherDocument in OtherDocuments)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="p-2">
+                                <div class="p-2">@otherDocument.FileName</div>
+                                <small class="muted p-2" style="flex:1;">@otherDocument.FileType</small>
+                            </div>
+
+                            <div class="mr-2">
+
+                                @if (string.IsNullOrEmpty(otherDocument.Description))
+                                {
+                                    <DescriptionButton Class="me-1" Type="button" Title="No description available">
+                                        <ButtonIcon>
+                                            <IconText />
+                                        </ButtonIcon>
+                                    </DescriptionButton>
+                                }
+                                else
+                                {
+                                    <DescriptionButton Class="me-1" Type="button" Title=@otherDocument.Description>
+                                        <ButtonIcon>
+                                            <IconText />
+                                        </ButtonIcon>
+                                    </DescriptionButton>
+                                }
+
+                                <Button OnClick=@(() => DownloadDocumentAsync(otherDocument))>
+                                    <ButtonIcon>
+                                        <IconDownload />
+                                    </ButtonIcon>
+                                </Button>
+
+                                <Button OnClick=@(() => OpenUpdateDocumentModal(otherDocument))>
+                                    <ButtonIcon>
+                                        <IconEdit />
+                                    </ButtonIcon>
+                                </Button>
+
+                                <Button OnClick=@(() => DeleteDocumentAsync(otherDocument))>
+                                    <ButtonIcon>
+                                        <IconDelete Stroke="white" />
+                                    </ButtonIcon>
+                                </Button>
+                            </div>
+
+                        </li>
+
+                    }
+                }
+                else
+                {
+                    @if (IsLoadingDocuments)
+                    {
+                        <Loading></Loading>
+                    }
+                }
+            </ul>
+        </ModalBody>
+
+        <ModalFooter>
+            <Button ButtonText="Close" OnClick="@CloseDocumentsModal"></Button>
+        </ModalFooter>
+
+    </ModalNew>
+}
+
+@if (ShowEventsModal)
+{
+    <ModalNew OnCancel="@CloseEventsModal" Title="Events coupled with this document folder" MediumModal="true">
+
+        <ModalBody>
+            @if (Resource.Events.Count > 0)
+            {
+                foreach (var eventItem in Resource.Events)
+                {
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>@eventItem.EventName</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-title">@eventItem.EventDate.ToString("yyyy-MM-dd")</p>
+                            <a href="event/@eventItem.EventId" class="btn btn-outline-primary">Go to event</a>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p>No events</p>
+            }
+        </ModalBody>
+
+        <ModalFooter>
+            <Button ButtonText="Close" OnClick="@CloseEventsModal"></Button>
+        </ModalFooter>
+
+    </ModalNew>
+
+}

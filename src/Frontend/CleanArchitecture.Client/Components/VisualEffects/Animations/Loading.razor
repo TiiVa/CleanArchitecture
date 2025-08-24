@@ -1,0 +1,10 @@
+﻿<p class="h5"> <span class="@(SmallLoadingAnimation ? "spinner-border spinner-border-sm" : "spinner-border") text-primary me-4 @Class"></span>@Text</p>
+
+
+@code {
+    [Parameter] public string Text { get; set; } = string.Empty;
+
+    [Parameter] public bool SmallLoadingAnimation { get; set; }
+
+    [Parameter] public string Class { get; set; } = string.Empty;
+}

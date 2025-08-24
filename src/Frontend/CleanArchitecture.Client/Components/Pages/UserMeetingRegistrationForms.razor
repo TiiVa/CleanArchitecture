@@ -1,0 +1,267 @@
+﻿@page "/userRegistration"
+@using CleanArchitecture.Domain.Enums
+@using CleanArchitecture.Client.Components.VisualEffects.Icons
+@using CleanArchitecture.Client.Components.VisualEffects.Animations
+@using CleanArchitecture.Client.Components.VisualEffects.Modals
+@rendermode InteractiveServer
+
+<!-- #region Style -->
+
+<style>
+      .container {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        background-color: white;
+    }
+    /* Main content section */
+    .main-content {
+        flex: 1 0 auto;
+        padding: 20px;
+        text-align: center;
+        background-color: transparent;
+        justify-content: center;
+    }
+      .header {
+        flex: 0 1 auto;
+        text-align: center;
+        margin: 0; /* Ensure no margin around the header */
+        padding: 0; /* Ensure no padding around the header */
+    }
+    .column {
+        float: left;
+        padding: 10px;
+    }
+        /* Left and right column */
+        .column.side {
+            width: 25%;
+        }
+
+        /* Middle column */
+        .column.middle {
+            width: 50%;
+            justify-content: center;
+        }
+
+    /* Clear floats after the columns */
+    .row::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    .header-color {
+        background-color: #9a8fff;
+    }
+
+    .card {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transition: box-shadow 0.03s ease-in-out;
+    }
+
+        .card:hover {
+            box-shadow: 0 10px 16px rgba(0,0,0,0.2);
+        }
+
+</style>
+
+<!-- #endregion -->
+
+<div class="container mb-5">
+    <header class="header mt-3">
+        <h1>EVENT*SPHERE EVENEMANG</h1> <hr />
+    </header>
+    <main class="main-content">
+        @if (!RegistrationSubmitted && EventsOpenForRegistration.Any())
+        {
+            <div class="card card-body col-xl-4 mx-auto border-eventsphere">
+
+                <h5 class="mb-3 card-title">Anmälan till evenemang</h5>
+
+                <div class="card-text">
+
+                    <EditForm Model="@UserMeetingRegistrationSparseDto" OnValidSubmit="@SubmitRegistration">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label for="eventSelection" class="form-label mb-1">Evenemang:</label>
+                                <select class="form-select" id="eventSelection" style="width:auto" @onchange="SelectedEventChanged">
+                                    @for (var i = 0; i < EventsOpenForRegistration.Count; i++)
+                                    {
+                                        var index = i;
+                                        var eventDto = EventsOpenForRegistration[index];
+
+                                        <option value="@eventDto.EventId">@eventDto.EventName @eventDto.EventDate.ToString("yyyy-MM-dd")</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label for="firstName" class="form-label mb-1">Förnamn</label>
+                                <InputText @bind-Value="@UserMeetingRegistrationSparseDto.FirstName" type="text" class="form-control" id="firstName" />
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <div class="col">
+                                <label for="familyName" class="form-label mb-1">Efternamn</label>
+                                <InputText @bind-Value="UserMeetingRegistrationSparseDto.FamilyName" type="text" class="form-control" id="familyName" />
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <div class="col">
+                                <label class="form-label mb-1" for="email">Epost</label>
+                                <InputText @bind-Value="UserMeetingRegistrationSparseDto.Email" type="email" class="form-control" id="email" />
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <div class="col">
+                                <label class="form-label mb-1" for="PhoneNumber">Telefonnummer <small class="text-muted">(valfri)</small> </label>
+                                <InputText @bind-Value="UserMeetingRegistrationSparseDto.PhoneNumber" type="text" class="form-control" id="PhoneNumber" />
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <div class="col">
+                                <label class="form-label mb-1" for="company">Företag</label>
+                                <InputText @bind-Value="UserMeetingRegistrationSparseDto.Company" type="text" class="form-control" id="company" />
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <div class="col">
+                                <label class="form-label mb-1" for="company">Fakturareferens <small class="text-muted">(valfri)</small> </label>
+                                <InputText @bind-Value="UserMeetingRegistrationSparseDto.InvoiceReference" type="text" class="form-control" id="invoicereference" />
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <div class="col">
+                                <label for="accomodation" class="form-label mb-1">Hotellrum</label>
+                                <select style="width:auto" class="form-select" id="accomodation" @bind="@UserMeetingRegistrationSparseDto.Accommodation">
+                                    @foreach (var accommodation in Enum.GetNames(typeof(Accommodation)))
+                                    {
+                                        <option value="@accommodation">@accommodation</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        @if (UserMeetingRegistrationSparseDto.Accommodation == Accommodation.Dubbelrum)
+                        {
+                            <div class="mb-3 row">
+                                <div class="col">
+                                    <label class="form-label mb-1" for="AccomodationWith">Bor med: <small class="text-muted">(valfri)</small> </label>
+                                    <InputText @bind-Value="UserMeetingRegistrationSparseDto.AccommodationWith" type="text" class="form-control" id="AccomodationWith" />
+                                </div>
+                            </div>
+                        }
+                        <div class="mb-3 row">
+                            <div class="col">
+                                <label class="form-label mb-1" for="UserInformation">Allergier <small class="text-muted">(valfri)</small> </label>
+                                <InputTextArea @bind-Value="UserMeetingRegistrationSparseDto.Allergies" type="text" class="form-control" id="UserInformation" />
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <div class="col">
+                                <label class="form-label mb-1" for="UserInformation">Övrigt <small class="text-muted">(valfri)</small> </label>
+                                <InputTextArea @bind-Value="UserMeetingRegistrationSparseDto.UserInformation" type="text" class="form-control" id="UserInformation" />
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <div class="col">
+                                <div class="row">
+                                    <div class="col-auto pe-0">
+                                        <InputCheckbox @bind-Value="UserMeetingRegistrationSparseDto.AgreeToSavePersonalData" class="form-check form-check-input" type="checkbox" id="AgreeToSavePersonalData" />
+                                    </div>
+                                    <div class="col text-start">
+                                        <label>
+                                            Jag vill delta på @UserMeetingRegistrationSparseDto.Event.EventName <br />
+                                            Genom att delta i detta evenemang godkänner du EventSphere's behandling av dina personuppgifter.
+                                            <a href="javascript:void(0);" @onclick="() => OpenMessageModal(GdprInfo)">Läs mer om våra villkor och dataskyddsprinciper.</a>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (!SubmitButtonLocked)
+                        {
+                            <button type="submit" class="btn btn-primary mb-3">Skicka anmälan</button>
+                        }
+                        @if (SubmitButtonLocked)
+                        {
+                            <div class="btn btn-primary mb-3">
+                                <span class="spinner-border spinner-border-sm"></span>
+                                Skickar anmälan
+                            </div>
+                        }
+
+                    </EditForm>
+
+                </div>
+            </div>
+        }
+
+        <div class="row">
+         
+            <div class="column side">
+            </div>
+
+            <div class="column middle">
+
+                @if (!IsLoading && !EventsOpenForRegistration.Any())
+                {
+                    <div class="card mb-5">
+                        <div class="card-header text-center">
+                            <p>Hej och välkommen!</p>
+                        </div>
+                        <div class="card-img">
+                            <img src="images/keyboard.jpg" alt="EventSphere-logga" class="img-fluid" />
+                        </div>
+                        <div class="card-footer">
+                            <p class="card-text"> För tillfället har vi inga evenemang öppna för anmälan.</p>
+                        </div>
+
+                    </div>
+                }
+            </div>
+
+
+
+            <div class="column side">
+            </div>
+        </div>
+        
+        @if (RegistrationSubmitted)
+        {
+       
+                <h4 class="mb-3">Anmälan mottagen.</h4>
+                <p>Du kommer kontaktas för bekräftelse av anmälan och eventuellt bokat hotellrum.</p>
+                <p>
+                    Vid frågor kontakta @UserMeetingRegistrationSparseDto.Event.ContactInfo eller skicka e-post
+                    <a href="@MailTo" class="btn btn-sm btn-primary ms-2"><IconMail ColorFill="#fff" /></a>
+                </p>
+                <button class="btn btn-outline-primary mt-3" @onclick="RegisterAnotherParticipant">Anmäl ny deltagare</button>
+           
+       
+        }
+
+        @if (IsLoading)
+        {
+            <Loading></Loading>
+        }
+        
+        
+        @if (ShowMessageModal)
+        {
+            <ModalNew OnCancel="@CloseMessageModal" ShowModalFooter="false" Title="Meddelande">
+                <ModalBody>
+                    <p>@((MarkupString)ModalMessage.Replace("\n", "<br />"))</p>
+                </ModalBody>
+            </ModalNew>
+        }
+
+    </main>
+
+</div>
+

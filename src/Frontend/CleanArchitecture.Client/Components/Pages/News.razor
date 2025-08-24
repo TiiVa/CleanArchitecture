@@ -1,0 +1,188 @@
+﻿@page "/news"
+@using CleanArchitecture.Client.Components.VisualEffects.Modals
+@using CleanArchitecture.Client.Components.VisualEffects.Buttons
+@using CleanArchitecture.Client.Components.VisualEffects.Animations
+
+@rendermode InteractiveServer
+
+<!-- #region Style -->
+
+<style>
+
+    .card {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transition: box-shadow 0.03s ease-in-out;
+       
+    }
+
+        .card:hover {
+            box-shadow: 0 10px 16px rgba(0,0,0,0.2);
+        }
+
+
+
+    .bold-black-border {
+        /* border: 1px solid black; */
+        /* border: thin solid black; */
+        /* border: 1px solid rgba(0, 0, 0, 0.1); */
+        border: 1px solid #ddd;
+    }
+    /* Container to hold the entire layout */
+    .container {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        background-color: white;
+    }
+
+    /* Header section with the top image */
+    .header {
+        flex: 0 1 auto;
+        text-align: center;
+        margin: 0; /* Ensure no margin around the header */
+        padding: 0; /* Ensure no padding around the header */
+    }
+
+ 
+/* Main content section */
+.main-content {
+    flex: 1 0 auto;
+    padding: 20px;
+    text-align: center;
+    background-color: transparent;
+    justify-content: center;
+}
+
+.column {
+    float: left;
+    padding: 10px;
+}
+    /* Left and right column */
+    .column.side {
+        width: 25%;
+    }
+
+    /* Middle column */
+    .column.middle {
+        width: 50%;
+        justify-content: center;
+    }
+
+/* Clear floats after the columns */
+.row::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+    .header-color {
+        background-color: #9a8fff;
+    }
+
+    .btn:hover {
+        color: white !important;
+    }
+
+</style>
+
+<!-- #endregion -->
+
+<div class="container mb-5">
+    <header class="header mt-3">
+        <h1>EVENT*SPHERE NYHETER</h1> <hr />
+    </header>
+    <main class="main-content">
+
+        <div class="row">
+
+            <div class="column side">
+            </div>
+
+            <div class="column middle">
+               
+                @if (Stories.Count > 0 && !IsLoadingStories)
+                {
+
+
+                    @foreach (var story in Stories.OrderBy(x => x.Date))
+                    {
+
+                        <div class="card bold-black-border mb-5">
+                            <div class="card-header text-center  text-black border-eventsphere">
+                                <h5>@story.Header</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">@story.Body</p>
+                                <p class="card-text">Evenemangsdatum: @story.Date.ToString("yyyy-MM-dd")</p>
+                                @if (story.EventId != Guid.Empty)
+                                {
+
+                                    <a href="invitation/@story.EventId" class="btn btn-outline-primary text-black">Se Evenemang</a>
+                                }
+                            </div>
+                        </div>
+
+                    }
+
+
+                }
+
+                @if (Stories.Count == 0 && !IsLoadingStories)
+                {
+
+
+
+                    <div class="card mb-5">
+                        <div class="card-header text-center">
+                            <p>Hej och välkommen!</p>
+                        </div>
+                        <div class="card-img">
+                            <img src="images/keyboard.jpg" alt="EventSphere-keyboard" class="img-fluid" />
+                        </div>
+                        <div class="card-footer">
+                            <p class="card-text"> Just nu finns det inga nyheter att se, men titta gärna förbi senare!</p>
+                        </div>
+
+                    </div>
+
+                }
+
+                @if (IsLoadingStories)
+                {
+                    <Loading></Loading>
+                }
+
+            </div>
+
+
+
+            <div class="column side">
+            </div>
+
+
+
+
+        </div>
+
+
+
+    </main>
+
+    <footer class="mb-5 mt-3">
+    </footer>
+</div>
+
+
+
+@if (ShowMessageModal)
+{
+    <ModalNew OnCancel="CloseModalMessage" Title="Meddelande">
+        <ModalBody>
+            @ModalMessage
+        </ModalBody>
+
+        <ModalFooter>
+            <Button ButtonText="Close" OnClick="@CloseModalMessage"></Button>
+        </ModalFooter>
+    </ModalNew>
+}

@@ -1,0 +1,279 @@
+﻿@page "/registeredMeetingParticipants"
+@using CleanArchitecture.Domain.Enums
+@using Microsoft.AspNetCore.Authorization
+@using CleanArchitecture.Client.Components.VisualEffects.Buttons
+@using CleanArchitecture.Client.Components.VisualEffects.Icons
+@using CleanArchitecture.Client.Components.VisualEffects.Animations
+@using CleanArchitecture.Client.Components.VisualEffects.Modals
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Admin")]
+
+
+<style>
+    .card {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transition: box-shadow 0.03s ease-in-out;
+    }
+
+        .card:hover {
+            box-shadow: 0 10px 16px rgba(0,0,0,0.2);
+        }
+
+    .container {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        background-color: white;
+    }
+    /* Header section with the top image */
+    .header {
+        flex: 0 1 auto;
+        text-align: center;
+        margin: 0; /* Ensure no margin around the header */
+        padding: 0; /* Ensure no padding around the header */
+    }
+    /* Main content section */
+    .main-content {
+        flex: 1 0 auto;
+        padding: 20px;
+        text-align: center;
+        background-color: transparent;
+        justify-content: center;
+    }
+
+    .column {
+        float: left;
+        padding: 10px;
+    }
+        /* Left and right column */
+        .column.side {
+            width: 25%;
+        }
+
+        /* Middle column */
+        .column.middle {
+            width: 50%;
+            justify-content: center;
+        }
+
+    /* Clear floats after the columns */
+    .row::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    .header-color {
+        background-color: #9a8fff;
+    }
+</style>
+
+
+<div class="container mb-5">
+
+    <header class="header mt-3">
+        <h1>EVENT PARTICIPANTS</h1> <hr />
+    </header>
+
+    <main class="main-content">
+
+        @if (EventWithUsersExists && !IsLoadingParticipants)
+        {
+            <div class="card border-eventsphere">
+                <div class="card-body" style="background-color:l; color: #333;">
+                    <div class="accordion w-75 mx-auto mt-5 mb-5">
+                        <h5>Event | Date | Number of participants</h5>
+                        @for (var i = 0; i < EventsWithRegisteredUsers.Count; i++)
+                        {
+                            var eventDto = EventsWithRegisteredUsers[i];
+                            var index = i;
+
+                            var rowClass = index % 2 == 0 ? "striped-1" : "striped-2";
+
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button @onclick="() => ShowOrCollapseEventOnIndex[index] = !ShowOrCollapseEventOnIndex[index]" class="accordion-button collapsed hover @rowClass">
+                                        <div style="flex: 1;">
+                                            @eventDto.EventName &nbsp;
+                                            <span class="text-muted">@eventDto.EventDate.ToString("yyyy-MM-dd")</span>
+                                        </div>
+                                        <div class="bg-primary rounded p-2 me-2 text-center" style="min-width: 45px;"> <span class="text-white">@eventDto.EventRegistrationForms.Count</span> </div>
+                                    </button>
+                                </h2>
+                                <div class="accordion-collapse collapse @(ShowOrCollapseEventOnIndex[index] ? "show" : "")">
+                                    <div class="accordion-body">
+
+                                        <ExcelExport List="@eventDto.EventRegistrationForms.OrderBy(x => x.Company).ToList()"
+                                                     FileName="@($"{eventDto.EventName} {eventDto.EventDate:yyyy-MM-dd} participants")" />
+
+                                        <div class="table-responsive py-2">
+                                            <table class="table table-hover table-striped table-light">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col"></th>
+                                                        <th scope="col">First name</th>
+                                                        <th scope="col">Last name</th>
+                                                        <th scope="col">Company</th>
+                                                        <th scope="col">Email</th>
+                                                        <th scope="col">Phone</th>
+                                                        <th scope="col">Update</th>
+                                                        <th scope="col">Remove</th>
+                                                    </tr>
+                                                </thead>
+
+                                                <tbody>
+                                                    @foreach (var participant in eventDto.EventRegistrationForms)
+                                                    {
+                                                        <tr>
+                                                            <td>@(eventDto.EventRegistrationForms.IndexOf(participant) + 1).</td>
+                                                            <td>@participant.FirstName</td>
+                                                            <td>@participant.FamilyName</td>
+                                                            <td>@participant.Company</td>
+                                                            <td>@participant.Email</td>
+                                                            <td>@participant.PhoneNumber</td>
+                                                            <td>
+                                                                <Button OnClick=@(() => OpenUpdateParticipantModal(participant))>
+                                                                    <ButtonIcon>
+                                                                        <IconEdit />
+                                                                    </ButtonIcon>
+                                                                </Button>
+                                                            </td>
+                                                            <td>
+                                                                <Button OnClick=@(() => DeleteParticipantInDbAsync(participant))>
+                                                                    <ButtonIcon>
+                                                                        <IconDelete Stroke="white" />
+                                                                    </ButtonIcon>
+                                                                </Button>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+
+                                            </table>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                    </div>
+
+                </div>
+            </div>
+
+
+
+        }
+
+        @if (IsLoadingParticipants)
+        {
+            <Loading></Loading>
+        }
+        @if (!IsLoadingParticipants && !EventWithUsersExists)
+        {
+            <p>There is no event with registered users</p>
+        }
+
+    </main>
+
+</div>
+
+
+
+
+@if (ShowUpdateParticipantModal)
+{
+    <ModalNew Title="Update participant" OnCancel="CloseUpdateParticipantModal">
+        <ModalBody>
+
+            <div class="mb-3">
+                <label for="firstName" class="form-label">First Name</label>
+                <input @bind="@Participant.FirstName" type="text" class="form-control" id="firstName" />
+            </div>
+
+            <div class="mb-3">
+                <label for="familyName" class="form-label">Family Name</label>
+                <input @bind="Participant.FamilyName" type="text" class="form-control" id="familyName" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="email">Email</label>
+                <input @bind="Participant.Email" type="email" class="form-control" id="email" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="PhoneNumber">PhoneNumber</label>
+                <input @bind="Participant.PhoneNumber" type="text" class="form-control" id="PhoneNumber" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="company">Company</label>
+                <input @bind="Participant.Company" type="text" class="form-control" id="company" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="invoiceRef">Invoice reference</label>
+                <input @bind="Participant.InvoiceReference" type="text" class="form-control" id="invoiceRef" />
+            </div>
+
+            <div class="mb-3">
+                <label for="accommodation" class="form-label">Accommodation:</label>
+                <select class="form-select" id="Event" @bind="@Participant.Accommodation">
+                    @foreach (var accommodation in Enum.GetNames(typeof(Accommodation)))
+                    {
+                        <option value="@accommodation">@accommodation</option>
+                    }
+
+                </select>
+            </div>
+
+            @if (Participant.Accommodation == Accommodation.Dubbelrum)
+            {
+                <div class="mb-3">
+                    <label class="form-label" for="AccomodationWith">AccommodationWith:</label>
+                    <input @bind="@Participant.AccommodationWith" type="text" class="form-control" id="AccomodationWith" />
+                </div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label" for="Allergies">Allergies</label>
+                <textarea @bind="Participant.Allergies" class="form-control" id="Allergies"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="UserInformation">UserInformation</label>
+                <textarea @bind="Participant.UserInformation" class="form-control" id="UserInformation"></textarea>
+            </div>
+
+            <div class="form-check mb-3">
+                <input @bind="@Participant.Confirmed" class="form-check-input" type="checkbox" value="" id="confirmed">
+                <label class="form-check-label" for="confirmed">is confirmed</label>
+            </div>
+
+        </ModalBody>
+        <ModalFooter>
+
+            <Button OnClick="@UpdateParticipantInDbAsync">
+                <ButtonIcon>
+                    <IconSave Width="24" Height="24" />
+                </ButtonIcon>
+            </Button>
+            <Button ButtonText="Cancel" OnClick="@CloseUpdateParticipantModal"></Button>
+
+        </ModalFooter>
+    </ModalNew>
+}
+
+@if (ShowMessageModal)
+{
+    <ModalNew OnCancel="CloseMessageModal" Title="Message">
+        <ModalBody>
+            @ModalMessage
+        </ModalBody>
+
+        <ModalFooter>
+            <Button ButtonText="Close" OnClick="@CloseMessageModal"></Button>
+        </ModalFooter>
+    </ModalNew>
+}

@@ -1,0 +1,283 @@
+﻿@page "/documents"
+@rendermode InteractiveServer
+@using CleanArchitecture.Domain.Enums
+@using Microsoft.AspNetCore.Authorization
+@using CleanArchitecture.Client.Components.VisualEffects.Buttons
+@using CleanArchitecture.Client.Components.VisualEffects.Icons
+@using CleanArchitecture.Client.Components.VisualEffects.Animations
+@using CleanArchitecture.Client.Components.VisualEffects.Modals
+@inject IJSRuntime Js
+@attribute [Authorize(Roles = "Admin")]
+
+<div class="bg-white full-height">
+
+    @if (!IsLoadingDocuments)
+    {
+        <div class="p-3">
+
+            <h5>All documents</h5>
+
+            <Button OnClick="OpenCreateDocumentModal">
+                <ButtonIcon>
+                    <IconAdd Stroke="white" />
+                </ButtonIcon>
+            </Button>
+
+        </div>
+    }
+
+    @if (AllDocuments.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-light table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col"></th>
+                        <th scope="col" @onclick="SortByName" style="cursor:pointer" class="text-decoration-underline">Name</th>
+                        <th scope="col">Created by</th>
+                        <th scope="col" @onclick="SortByResourceName" style="cursor:pointer" class="text-decoration-underline">Document folder</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Download</th>
+                        <th scope="col">Update</th>
+                        <th scope="col">Delete</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var document in AllDocuments)
+                    {
+                        <tr>
+                            <td>@(AllDocuments.IndexOf(document) + 1).</td>
+                            <td>@document.FileName</td>
+                            <td> <small>@document.CreatedBy</small> </td>
+                            <td> <small>@document.Resource.ResourceName</small> </td>
+                            <td>
+                                <Button OnClick=@(() => OpenMessageModal($"{document.Description}"))>
+                                    <ButtonIcon>
+                                        <IconText />
+                                    </ButtonIcon>
+                                </Button>
+                            </td>
+                            <td>
+                                <Button OnClick=@(() => DownloadDocumentAsync(document))>
+                                    <ButtonIcon>
+                                        <IconDownload />
+                                    </ButtonIcon>
+                                </Button>
+                            </td>
+                            <td>
+                                <Button OnClick=@(() => OpenUpdateDocumentModal(document))>
+                                    <ButtonIcon>
+                                        <IconEdit />
+                                    </ButtonIcon>
+                                </Button>
+                            </td>
+                            <td>
+                                <Button OnClick=@(() => DeleteDocumentAsync(document))>
+                                    <ButtonIcon>
+                                        <IconDelete Stroke="white" />
+                                    </ButtonIcon>
+                                </Button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        if (IsLoadingDocuments)
+        {
+            <Loading Class="m-3"></Loading>
+        }
+        else
+        {
+            <div class="table-responsive py-2">
+                <table class="table table-light table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Created by</th>
+                            <th scope="col">Document folder</th>
+                            <th scope="col">Description</th>
+                            <th scope="col">Download</th>
+                            <th scope="col">Update</th>
+                            <th scope="col">Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="7">No Documents found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+
+</div>
+
+@if (ShowCreateDocumentModal)
+{
+    <ModalNew Title="Create document" OnCancel="CloseCreateDocumentModal">
+
+        <ModalBody>
+            @if (IsLoadingResources || ResourceExists)
+            {
+                <EditForm Model="Document">
+                    <DataAnnotationsValidator></DataAnnotationsValidator>
+                    <ValidationSummary></ValidationSummary>
+
+                    <div class="mb-3">
+                        @if (ResourceExists && !IsLoadingResources)
+                        {
+                            <label for="Resources" class="form-label">Document folder</label>
+                            <select class="form-select" @bind="@Document.Resource.ResourceId">
+
+                                @foreach (var resource in AllResources)
+                                {
+                                    <option value="@resource.ResourceId">@resource.ResourceName</option>
+                                }
+
+                            </select>
+                        }
+
+                        @if (IsLoadingResources)
+                        {
+                            <label><span class="spinner-border spinner-border-sm text-primary me-2"></span>Document folder</label>
+                        }
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="DocumentType" class="form-label">Type</label>
+                        <select class="form-select" id="DocumentType" @bind="@Document.FileType">
+                            @foreach (var documentType in Enum.GetNames(typeof(FileType)))
+                            {
+                                <option value="@documentType">@documentType</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="formFile" class="form-label">File</label>
+                        <InputFile OnChange="GetSelectedFileAsync" class="form-control" type="file" id="formFile" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="DocumentName" class="form-label">Filename <span class="text-muted">- will change file name if filled out</span></label>
+                        <InputText @bind-Value="Document.NewFileName" type="text" class="form-control" id="DocumentName" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="DocumentDescription" class="form-label">Description<span class="text-muted"> - optional. A good name is preferred</span></label>
+                        <InputTextArea @bind-Value="@Document.Description" class="form-control" id="DocumentDescription" />
+                    </div>
+
+                </EditForm>
+
+            }
+            @if (!IsLoadingResources && !ResourceExists)
+            {
+                <p>Create a document folder before creating a new document.</p>
+            }
+
+        </ModalBody>
+
+        <ModalFooter>
+
+            @if (IsLoadingResources || ResourceExists)
+            {
+                <Button OnClick="@AddDocumentToDbAsync">
+                    <ButtonIcon>
+                        <IconSave Height="24" Width="24" />
+                    </ButtonIcon>
+                </Button>
+            }
+
+            <Button ButtonText="Cancel" OnClick="@CloseCreateDocumentModal"></Button>
+        </ModalFooter>
+
+    </ModalNew>
+}
+
+@if (ShowUpdateDocumentModal)
+{
+    <ModalNew Title="Update document" OnCancel="CloseUpdateModal">
+        <ModalBody>
+
+            <div class="mb-3">
+
+                @if (ResourceExists && !IsLoadingResources)
+                {
+                    <label for="Resources" class="form-label">Document folder</label>
+
+                    <select class="form-select" @bind="@Document.Resource.ResourceId">
+                        @foreach (var resource in AllResources)
+                        {
+                            <option value="@resource.ResourceId">@resource.ResourceName</option>
+                        }
+                    </select>
+                }
+
+                @if (IsLoadingResources)
+                {
+                    <label><span class="spinner-border spinner-border-sm text-primary me-2"></span>Document folder</label>
+                }
+
+            </div>
+
+            <div class="mb-3">
+                <label for="DocumentType" class="form-label">Type</label>
+                <select class="form-select" id="DocumentType" @bind="@Document.FileType">
+                    @foreach (var documentType in Enum.GetNames(typeof(FileType)))
+                    {
+                        <option value="@documentType">@documentType</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="DocumentDescription" class="form-label">Description</label>
+                <textarea @bind="@Document.Description" class="form-control" id="DocumentDescription" />
+            </div>
+
+            <div class="mb-3">
+                <label for="formFile" class="form-label">File <span class="text-muted">- will not delete old file if left empty</span></label>
+                <InputFile OnChange="GetSelectedFileAsync" class="form-control" type="file" id="formFile" />
+
+            </div>
+
+            <div class="mb-3">
+                <label for="DocumentName" class="form-label">File name <span class="text-muted">- will change file name if filled out</span></label>
+                <input @bind="@Document.NewFileName" type="text" class="form-control" id="DocumentName" />
+            </div>
+
+        </ModalBody>
+
+        <ModalFooter>
+            <Button OnClick="@UpdateDocumentInDbAsync">
+                <ButtonIcon>
+                    <IconSave Height="24" Width="24" />
+                </ButtonIcon>
+            </Button>
+            <Button ButtonText="Cancel" OnClick="@CloseUpdateModal"></Button>
+        </ModalFooter>
+
+    </ModalNew>
+}
+
+@if (ShowMessageModal)
+{
+    <ModalNew OnCancel="CloseMessageModal" Title="Message">
+
+        <ModalBody>
+            @ModalMessage
+        </ModalBody>
+
+        <ModalFooter>
+            <Button ButtonText="Close" OnClick="@CloseMessageModal"></Button>
+        </ModalFooter>
+
+    </ModalNew>
+}

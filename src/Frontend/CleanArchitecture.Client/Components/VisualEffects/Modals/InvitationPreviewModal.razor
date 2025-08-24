@@ -1,0 +1,133 @@
+﻿@using CleanArchitecture.Application.DTOs
+@using CleanArchitecture.Presentation.FrontendService
+@using CleanArchitecture.Client.Components.VisualEffects.Icons
+<div class="bg-white p-4" style="
+height:100%;
+margin-right:4vw;
+margin-left:4vw;
+margin-bottom:4vw;">
+
+    <div class="row">
+        <div class="col text-center">
+            @if (Invitation.PictureFile is not null)
+            {
+                @switch (Invitation.FileFormat)
+                {
+                    case "image/jpeg" or "image/png":
+                        <img style="width:55vw" src="data:;base64,@Convert.ToBase64String(Invitation.PictureFile)" alt="Image" />
+                        break;
+                    case "application/pdf":
+                        <iframe style="width:70%; height:93vh" src="data:application/pdf;base64,@Convert.ToBase64String(Invitation.PictureFile)" alt="Image"></iframe>
+                        break;
+                    case "image/svg+xml":
+                        <img style="width:55vw" src="data:image/svg+xml;base64,@Convert.ToBase64String(Invitation.PictureFile)" alt="Image" />
+                        break;
+                }
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-2"></div>
+        <div class="col">
+
+            <div class="row mt-5">
+                <div class="col">
+                    <h4 style="white-space: pre-line;"><span class="text-muted h5">Var: </span>@Invitation.EventLocation</h4>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <h4 style="white-space: pre-line;"><span class="text-muted h5">När: </span>@Invitation.EventStartAt.ToString("yyyy-MM-dd HH:mm") - @Invitation.EventEndAt.ToString("yyyy-MM-dd HH:mm")</h4>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-auto pb-3">
+                    <img src="/images/redTech.jpg" style="width:8px; height:100%" />
+                </div>
+                <div class="col">
+                    <p style="white-space: pre-line;">@Invitation.EventIntroduction</p>
+                </div>
+            </div>
+
+            <Virtualize Items="Invitation.Sections" Context="sect">
+                <div class="row mt-4">
+                    <div class="col">
+                        <h3 style="white-space: pre-line;" class="text-primary">@sect.SectionHeader</h3>
+                        <p style="white-space: pre-line;">@sect.SectionBody </p>
+                        <a href="@sect.HyperLink" target="_blank">@(!string.IsNullOrWhiteSpace(sect.HyperLinkHeader) ? sect.HyperLinkHeader : sect.HyperLink)</a>
+                    </div>
+                </div>
+            </Virtualize>
+
+        </div>
+        <div class="col-2">
+        </div>
+    </div>
+
+    @if (Invitation.ShowWelcomeText)
+    {
+        <div class="row mt-4">
+            <div class="col"></div>
+            <div class="col-auto text-center">
+                <h2>
+                    Varmt välkomna från oss på Event*Sphere
+                </h2>
+            </div>
+            <div class="col"></div>
+        </div>
+        <div class="row mt-3">
+            <div class="col text-end pe-0">
+                @if (!string.IsNullOrWhiteSpace(MailTo))
+                {
+                    <a href="@MailTo" class="btn btn-sm btn-primary"><IconMail ColorFill="#fff" /></a>
+                }
+            </div>
+            <div class="col-auto text-center">
+                <label style="white-space: pre-line;">@Invitation.ContactInfo</label>
+            </div>
+            <div class="col"></div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col"></div>
+            <div class="col text-center">
+                <button class="btn btn-lg btn-primary bg-eventsphere" @onclick="() =>TransferToEventRegistration(Invitation.Id) ">Anmälan</button>
+            </div>
+            <div class="col"></div>
+        </div>
+
+    }
+
+</div>
+
+@code
+{
+    [Parameter]
+    public InvitationDto Invitation { get; set; } = new();
+
+    [Parameter]
+    public string MailTo { get; set; } = "";
+
+    [Inject] NavigationManager NavigationManager { get; set; }
+
+    [Inject] MultiService MultiService { get; set; }
+    
+    private async  Task TransferToEventRegistration(Guid id)
+    {
+        var transferToEvent = await MultiService.EventService.GetAllEvents();
+
+        if (transferToEvent.IsFailed)
+        {
+            return;
+        }
+
+        var eventToSignUpFor = transferToEvent.Value.FirstOrDefault(e => e.InvitationId == id);
+        if (eventToSignUpFor is null)
+        {
+            return;
+        }
+
+        NavigationManager.NavigateTo($"/userRegistration/{eventToSignUpFor.EventId}");
+    }
+}

@@ -1,0 +1,593 @@
+﻿@page "/event/{EventIdFromParameter:guid}"
+@using System.IO
+@using CleanArchitecture.Application.DTOs
+@using CleanArchitecture.Application.DTOs.UserDtos
+@using CleanArchitecture.Domain.Enums
+@using CleanArchitecture.Presentation.FrontendService
+@using Microsoft.AspNetCore.Authorization
+@using CleanArchitecture.Client.Components.VisualEffects.Buttons
+@using CleanArchitecture.Client.Components.VisualEffects.Modals
+@using CleanArchitecture.Client.Components.VisualEffects.Animations
+@using CleanArchitecture.Client.Components.VisualEffects
+@using CleanArchitecture.Client.Components.VisualEffects.Icons
+@using FluentResults
+
+
+@inject IJSRuntime Js
+@inject MultiService MultiService
+
+
+@attribute [Authorize(Roles = "Admin, User")]
+
+@rendermode InteractiveServer
+
+
+<style>
+
+
+    .container {
+        display: flex;
+        justify-content: center;
+        flex-direction: row;
+        min-height: 100vh;
+        background-color: white;
+    }
+
+    .column {
+        flex: 1; 
+        padding: 10px;
+    }
+
+    
+
+        .column.event {
+            background-color: white; 
+        }
+
+        .column.invitation {
+            background-color: white; 
+        }
+
+
+    card {
+                margin-bottom: 20px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                overflow: hidden;
+                
+
+    }
+
+        .card-img-top img, .card-img iframe {
+                height: 100%;
+                max-width: 100%;
+
+    }
+
+        .card-header, .card-body, .card-footer {
+                padding: 10px;
+
+    }
+
+            .card-header label, .card-body label {
+                    display: block;
+                    margin-bottom: 5px;
+
+        }
+
+        .card-footer h2 {
+                margin-bottom: 10px;
+
+    }
+
+        .card-footer label {
+                white-space: pre-line;
+
+    }
+
+</style>
+
+
+
+<div class="container">
+
+
+
+    @if (EventExists)
+    {
+        <div class="column event">
+
+            <h2>Evenemang</h2> <hr/>
+
+            <div class="column">
+
+                <h3>@EventDto.EventName <span class="text-muted">@EventDto.EventDate.ToString("yyyy-MM-dd")</span> </h3>
+                <p>@EventDto.EventDescription</p>
+
+                @if (OtherDocumentFileExists)
+                {
+                    <div class="row mt-4">
+                        <h5>Dokument</h5>
+
+                        <div class="col-xxl-6">
+
+                            <ol class="list-group list-group-numbered">
+                                <Virtualize Items="FilesOfTypeOther" Context="document">
+                                    @{
+                                        var index = FilesOfTypeOther.IndexOf(document);
+                                    }
+
+                                    <li class="list-group-item list-group-item-action" type="button" @onclick="() => GetFileFromDbThenDownloadAsync(document.Id, index)">
+                                        @Path.GetFileNameWithoutExtension(document.Name)
+
+                                        @if (IsDownloadingFileTypeOtherOnIndex[index])
+                                        {
+                                            <div class="btn btn-primary float-end rounded rounded-pill" style="height:34px;"> <span class="spinner-border spinner-border-sm" style="margin-bottom:2px;"></span> </div>
+                                        }
+
+                                        @if (!IsDownloadingFileTypeOtherOnIndex[index])
+                                        {
+                                            <div class="btn btn-sm btn-primary float-end rounded rounded-pill" style="height:34px;"><IconDownload></IconDownload></div>
+                                        }
+
+                                    </li>
+
+                                </Virtualize>
+                            </ol>
+
+                        </div>
+
+                    </div>
+                }
+
+                @if (ImageFileExists)
+                {
+                    <div class="row mt-5">
+
+                        @if (IsLoadingGettingImages)
+                        {
+                            <div class="col">
+                                <div class="btn btn-primary btn-lg">
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                    Bilder
+                                </div>
+                            </div>
+                        }
+
+                        @if (!IsLoadingGettingImages)
+                        {
+                            <div class="col-auto">
+
+                                <button class="btn btn-primary btn-lg" @onclick="OpenPicturesModal">Bilder</button>
+
+                            </div>
+                        }
+
+                    </div>
+                }
+
+                @if (ShowImagesModal)
+                {
+                    <ModalNew OnCancel="ClosePicturesModal" LargeModal="true">
+
+                        <ModalBody>
+                            <UserMeetingPictureGallery Images="ImageFiles" />
+                        </ModalBody>
+
+                        <ModalFooter>
+                            @if (!IsLoadingDownloadingAllImages)
+                            {
+                                <Button ButtonText="Ladda ner alla bilder" OnClick="() => DownloadAllPictures()" Class="me-5"></Button>
+                            }
+                            @if (IsLoadingDownloadingAllImages)
+                            {
+                                <div class="btn btn-primary me-5">
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                    Ladda ner alla bilder
+                                </div>
+                            }
+                            <Button ButtonText="Stäng" OnClick="ClosePicturesModal"></Button>
+                        </ModalFooter>
+
+                    </ModalNew>
+
+                }
+
+                @if (EventDto.Participants.Any())
+                {
+                    <div class="row mt-5 ">
+                        <div class="col-auto" style="min-width:45vw">
+
+                            <ul class="list-group list-group-flush list-group-numbered">
+
+                                <p>
+                                    <div>
+                                        <span class="h5">Deltagare</span>
+
+                                        <div class="float-end">
+                                            <span class="text-muted">sortera efter</span>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="SortParticipantsByName">Namn</button>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="SortParticipantsByCompanyName">Företag</button>
+                                        </div>
+
+                                    </div>
+                                </p>
+
+                                @foreach (var participant in EventDto.Participants)
+                                {
+                                    <li class="list-group-item list-group-item-action">@participant.FirstName @participant.FamilyName <a class="text-muted" href="@($"mailto:{participant.Email}")">@participant.Email.ToLower() </a> <span class="float-end text-muted">@participant.Company</span> </li>
+                                }
+                            </ul>
+
+                        </div>
+                    </div>
+                }
+            </div>
+            
+        </div>
+        
+        <div class="column invitation">
+            <h2>Inbjudan</h2> <hr/>
+
+            @if (Invitations.EventLocation != null)
+            {
+                
+                    <div class="card border-eventsphere">
+                        <div class="card-img-top">
+                            @if (Invitations.PictureFile is not null)
+                            {
+                                @switch (Invitations.FileFormat)
+                                {
+                                    case "image/jpeg" or "image/png":
+                                        <img  src="data:;base64,@Convert.ToBase64String(Invitations.PictureFile)" alt="Image" />
+                                        break;
+                                    case "application/pdf":
+                                        <iframe src="data:application/pdf;base64,@Convert.ToBase64String(Invitations.PictureFile)" alt="Image"></iframe>
+                                        break;
+                                    case "image/svg+xml":
+                                        <img src="data:image/svg+xml;base64,@Convert.ToBase64String(Invitations.PictureFile)" alt="Image" />
+                                        break;
+                                }
+                            }
+                        </div>
+
+                        <div class="card-header">
+                            <div class="p-0 ms-1" style="width:180px">
+                                <label><span class="text-muted">Start: </span>@Invitations.EventStartAt.ToString("yyyy-MM-dd HH:mm")</label>
+                                <label><span class="text-muted">Slut: &nbsp;</span>@Invitations.EventEndAt.ToString("yyyy-MM-dd HH:mm")</label>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+
+                            <div class="col-auto">
+                                <label><span class="text-muted">Plats: </span>@Invitations.EventLocation</label>
+                           
+                            </div>
+                            <hr />
+                            <div class="col ps-0 text-truncate text-wrap" style="height:9vh">
+                                <label>@Invitations.EventIntroduction</label> 
+                            </div>
+
+                        </div>
+
+                        <div class="card-text">
+                            <Virtualize Items="Invitations.Sections" Context="sect">
+                                <div class="row mt-4">
+                                <div class="col" style="padding-left: 20px; ">
+                                    <hr />
+                                    <h3 style="white-space: pre-line;" class="text-primary ">@sect.SectionHeader</h3>
+                                        <p style="white-space: pre-line;">@sect.SectionBody </p>
+                                        <a href="@sect.HyperLink" target="_blank">@(!string.IsNullOrWhiteSpace(sect.HyperLinkHeader) ? sect.HyperLinkHeader : sect.HyperLink)</a>
+                                    </div>
+                                </div>
+                            </Virtualize>
+
+
+                        </div>
+
+                        <div class="card-footer">
+                            @if (Invitations.ShowWelcomeText)
+                            {
+                                <div class="row mt-4">
+                                    <div class="col"></div>
+                                    <div class="col-auto text-center">
+                                        <h2>
+                                            Varmt välkomna från oss på Event*Sphere @* <a href="/" target="_blank"> <img class="mb-3 ms-1" src="/images/redTech.jpg" alt="EventSphere logo" height="35" /> </a> *@
+                                        </h2>
+                                    </div>
+                                    <div class="col"></div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col text-end pe-0">
+                                    </div>
+                                    <div class="col-auto text-center">
+                                        <label style="white-space: pre-line;">@Invitations.ContactInfo</label>
+                                    </div>
+                                    <div class="col"></div>
+                                </div>
+
+
+
+                            }
+                            else
+                            {
+                                <p>Inga inbjudningar tillgängliga</p>
+                            }
+
+                        </div>
+                    </div>
+                
+
+
+            }
+
+
+
+        </div>
+
+
+        @if (IsLoadingEvent)
+        {
+            <Loading Text="Laddar in evenemanget..."></Loading>
+        }
+
+        @if (!EventExists && !IsLoadingEvent)
+        {
+            <p>Evenemanget kunde inte hittas.</p>
+        }
+
+        @if (ShowMessageModal)
+        {
+            <ModalNew OnCancel="CloseMessageModal" Title="Meddelande" ShowModalFooter="false">
+                <ModalBody>
+                    @ModalMessage
+                </ModalBody>
+            </ModalNew>
+        }
+
+
+    }
+</div>
+
+@code
+{
+    [Parameter] public Guid EventIdFromParameter { get; set; }
+
+    private bool ShowMessageModal { get; set; }
+    private bool EventExists { get; set; }
+    private bool OtherDocumentFileExists { get; set; }
+    private bool ImageFileExists { get; set; }
+    private bool IsLoadingEvent { get; set; }
+    private bool IsLoadingDownloadingAllImages { get; set; }
+    private bool IsLoadingGettingImages { get; set; }
+    private bool ShowImagesModal { get; set; }
+    private bool ToggleParticipantNameSorting { get; set; } = true;
+    private bool ToggleCompanyNameSorting { get; set; } = true;
+
+    private List<bool> IsDownloadingFileTypeOtherOnIndex { get; set; } = [];
+
+    private EventDocumentsParticipantsDto EventDto { get; set; } = null!;
+    private InvitationDto Invitations { get; set; } = new();
+    private List<FileNoDataDto> FilesOfTypeOther { get; set; } = new();
+    private List<FileDataDto> ImageFiles { get; set; } = new();
+
+    private string ModalMessage { get; set; } = string.Empty;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetEventByIdFromDbAsync();
+        await GetInvitationForEvent();
+    }
+
+    private async Task GetEventByIdFromDbAsync()
+    {
+        IsLoadingEvent = true;
+
+
+        EventDocumentsParticipantsDto? response;
+
+        try
+        {
+            var result = await MultiService.EventService.GetEventForUser(EventIdFromParameter);
+
+            if (result.IsFailed)
+            {
+                OpenMessageModal("Could not find event for user");
+
+            }
+
+            response = result.Value;
+
+        }
+        catch (Exception ex)
+        {
+            OpenMessageModal($"Webbservern stötte på ett oväntat fel som hindrade den från att fullfölja begäran. \n{ex.Message}");
+            EventExists = false;
+            IsLoadingEvent = false;
+            return;
+        }
+
+        if (response is null)
+        {
+            IsLoadingEvent = false;
+            EventExists = false;
+            return;
+        }
+
+        FilesOfTypeOther.AddRange(
+        response.Files
+        .Where(file => file.Type == FileType.Other)
+        .OrderBy(file => file.Name)
+        .ToList());
+
+        if (FilesOfTypeOther.Any())
+            OtherDocumentFileExists = true;
+
+        if (response.Files.Any(file => file.Type == FileType.Image))
+            ImageFileExists = true;
+
+        // Prevents index out of range exception.
+        IsDownloadingFileTypeOtherOnIndex = new List<bool>(new bool[FilesOfTypeOther.Count]);
+
+        EventDto = response with
+            {
+                Participants = response.Participants.OrderBy(participant => participant.FirstName).ToList()
+            };
+
+        IsLoadingEvent = false;
+        EventExists = true;
+    }
+
+    private async Task GetFileFromDbThenDownloadAsync(Guid fileId, int index)
+    {
+        IsDownloadingFileTypeOtherOnIndex[index] = true;
+
+        FileDataDto? file;
+
+        try
+        {
+            file = await MultiService.DocumentService.GetFileData(fileId);
+
+
+        }
+        catch (Exception ex)
+        {
+            OpenMessageModal($"Nedladdning misslyckades. \n{ex.Message}");
+            IsDownloadingFileTypeOtherOnIndex[index] = false;
+
+            return;
+        }
+
+        if (file is null)
+        {
+            OpenMessageModal($"Nedladdning misslyckades");
+            IsDownloadingFileTypeOtherOnIndex[index] = false;
+
+            return;
+        }
+
+        await Js.DownloadFile(file.Name, file.Data);
+
+        IsDownloadingFileTypeOtherOnIndex[index] = false;
+    }
+
+    private async Task GetImagesForEventFromDbAsync(Guid eventId)
+    {
+
+        List<FileDataDto>? images;
+
+
+        try
+        {
+
+            images = await MultiService.DocumentService.GetImagesForUserByEventId(eventId);
+        }
+        catch (Exception ex)
+        {
+            OpenMessageModal($"Webbservern stötte på ett oväntat fel som hindrade den från att fullfölja begäran. \n{ex.Message}");
+            IsLoadingGettingImages = false;
+            return;
+        }
+
+        if (images is null)
+        {
+            OpenMessageModal($"Webbservern stötte på ett oväntat fel som hindrade den från att fullfölja begäran.");
+            IsLoadingGettingImages = false;
+            return;
+        }
+
+        ImageFiles = images
+        .OrderBy(image => image.Name)
+        .ToList();
+    }
+
+    private async Task DownloadAllPictures()
+    {
+        IsLoadingDownloadingAllImages = true;
+
+        // Makes the loading animation not freeze.
+        await Task.Run(async () =>
+        {
+            foreach (var imageFile in ImageFiles)
+            {
+                await Js.DownloadFile(imageFile.Name, imageFile.Data);
+            }
+        });
+
+        IsLoadingDownloadingAllImages = false;
+    }
+
+    private async Task GetInvitationForEvent()
+    {
+        var eventToShow = await MultiService.EventService.GetAllEvents();
+
+        var foundEvent = eventToShow.Value.FirstOrDefault(e => e.EventId == EventIdFromParameter);
+
+        var invitationInEvent = foundEvent.InvitationId.Value;
+
+
+        var invitationToDisplay = await MultiService.InvitationService.GetInvitationById(invitationInEvent);
+
+        Invitations = invitationToDisplay.Value;
+
+    }
+
+
+    #region SortParticipantsBy
+    private void SortParticipantsByName()
+    {
+        var sortedParticipants = ToggleParticipantNameSorting
+        ? EventDto.Participants.OrderBy(x => x.FirstName).ToList()
+        : EventDto.Participants.OrderByDescending(x => x.FirstName).ToList();
+
+        EventDto = EventDto with { Participants = sortedParticipants };
+
+        ToggleParticipantNameSorting = !ToggleParticipantNameSorting;
+    }
+
+    private void SortParticipantsByCompanyName()
+    {
+        var sortedParticipants = ToggleCompanyNameSorting
+        ? EventDto.Participants.OrderBy(x => x.Company).ToList()
+        : EventDto.Participants.OrderByDescending(x => x.Company).ToList();
+
+        EventDto = EventDto with { Participants = sortedParticipants };
+
+        ToggleCompanyNameSorting = !ToggleCompanyNameSorting;
+    }
+    #endregion
+
+    #region OpenCloseModal
+    private async Task OpenPicturesModal()
+    {
+        IsLoadingGettingImages = true;
+
+        if (!ImageFiles.Any())
+            await GetImagesForEventFromDbAsync(EventIdFromParameter);
+
+        ShowImagesModal = true;
+
+        IsLoadingGettingImages = false;
+    }
+
+    private void ClosePicturesModal()
+    {
+        ShowImagesModal = false;
+    }
+
+    private void OpenMessageModal(string message)
+    {
+        ShowMessageModal = true;
+        ModalMessage = message;
+    }
+
+    private void CloseMessageModal()
+    {
+        ShowMessageModal = false;
+        ShowImagesModal = false;
+        ModalMessage = "";
+    }
+    #endregion
+}

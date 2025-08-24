@@ -1,0 +1,109 @@
+﻿@using System.IO
+@using System.Security.Claims
+@using CleanArchitecture.Application.DTOs
+@using CleanArchitecture.Presentation.FrontendService
+@using CleanArchitecture.Client.Components.VisualEffects.Modals
+
+@typeparam TItem
+@inject AuthenticationStateProvider AuthState
+@inject IJSRuntime Js
+
+
+<button class="btn btn-secondary" @onclick="ExportToExcel"><img src="images/icons8-microsoft-excel-20.png" /> @ButtonText</button>
+
+@if (_showMessageModal)
+{
+    <ModalNew OnCancel="CloseModal" Title="@_modalHeader">
+        <ModalBody>
+            @_modalMessage
+        </ModalBody>
+    </ModalNew>
+}
+
+@code {
+   
+    [Inject]
+    private MultiService MultiService { get; set; }
+
+    [Parameter] public List<TItem> List { get; set; } = new();
+
+    [Parameter] public string ButtonText { get; set; } = "Export participants to Excel";
+
+    [Parameter] public string FileName { get; set; } = "dataExcel";
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private bool _showMessageModal;
+    private string _modalHeader = "Message";
+    private string _modalMessage = string.Empty;
+
+    private async Task ExportToExcel()
+    {
+        if (!List.Any())
+        {
+            ShowModal($"Message", $"No items to export to Excel.");
+            return;
+        }
+
+        try
+        {
+            var authState = await AuthState.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var list = List.Cast<object>().ToList();
+            var type = List.FirstOrDefault().GetType().Name;
+            var excelFile = await MultiService.ExcelExportService.CreateExcelFileGoodsReceiveOrder(list, userId, type);
+
+            var excelFileDto = new ExcelFileDto
+                {
+                    ExcelFileId = excelFile.Id,
+                    Path = excelFile.Path
+
+                };
+
+            var file = await MultiService.ExcelExportService.GetExcelFile(excelFileDto.ExcelFileId);
+
+            if (file is not null)
+            {
+                using Stream stream = file.FileStream;
+
+                if (file.ContentType == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                {
+                    using (var fileStream = new MemoryStream())
+                    {
+                        await stream.CopyToAsync(fileStream);
+                        var byteArray = fileStream.ToArray();
+                        await Js.SaveAs($"{FileName}.xlsx", byteArray);
+                    }
+                }
+                else
+                {
+                    ShowModal($"Message", $"Error, could not export table to excel. Wrong mediatype.");
+                }
+            }
+            else
+            {
+                ShowModal($"Message", $"Error, could not export table to excel. No file found.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowModal("Exception", "File could not be created." + $"{ex.StackTrace}");
+        }
+    }
+
+    public void ShowModal(string header, string message)
+    {
+        _modalMessage = message;
+        _modalHeader = header;
+        _showMessageModal = true;
+        StateHasChanged();
+    }
+
+    public void CloseModal()
+    {
+        _showMessageModal = false;
+        StateHasChanged();
+    }
+}

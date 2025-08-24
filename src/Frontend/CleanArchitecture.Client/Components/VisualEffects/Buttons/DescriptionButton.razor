@@ -1,0 +1,19 @@
+﻿<button class="btn btn-primary @Class" style="@ButtonStyle" data-bs-toggle="tooltip" title="@Title" type="@Type">@ButtonIcon  @ButtonText</button>
+
+@code {
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+    [Parameter]
+    public RenderFragment ButtonIcon { get; set; }
+    public string ButtonText { get; set; }
+    [Parameter]
+    public string ButtonStyle { get; set; }
+    [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public string Type { get; set; }
+
+    [Parameter]
+    public string Class { get; set; }
+}

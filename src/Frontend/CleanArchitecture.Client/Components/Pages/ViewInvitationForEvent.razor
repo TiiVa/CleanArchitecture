@@ -1,0 +1,124 @@
+﻿@page "/invitation/{EventIdFromParameter:guid}"
+@using CleanArchitecture.Application.DTOs
+@using CleanArchitecture.Presentation.FrontendService
+@using CleanArchitecture.Client.Components.VisualEffects.Modals
+@using CleanArchitecture.Client.Components.VisualEffects.Icons
+@using FluentResults
+
+@rendermode InteractiveServer
+
+<div class="bg-white p-4 full-height">
+    @if (DisplayInvitation)
+    {
+        <div class="row p-0 m-0">
+            <div class="col">
+                <button class="float-end btn btn-primary bg-eventsphere" @onclick="ClosePreviewInvitation"><IconBack></IconBack></button>
+            </div>
+        </div>
+
+        <InvitationPreviewModal Invitation="@Invitation"
+                                MailTo="@MailTo">
+        </InvitationPreviewModal>
+      
+    }
+</div>
+
+
+
+@if (ShowMessageModal)
+{
+    <ModalNew OnCancel="CloseModalMessage" Title="Message" ShowModalFooter="false">
+        <ModalBody>
+            @ModalMessage
+        </ModalBody>
+    </ModalNew>
+}
+
+@code {
+
+    [Inject] MultiService? MultiService { get; set; } 
+
+    [Inject] NavigationManager NavigationManager { get; set; }
+
+    [Parameter] public Guid EventIdFromParameter { get; set; }
+    private bool ShowMessageModal { get; set; }
+    private string ModalMessage { get; set; } = string.Empty;
+
+    private bool DisplayInvitation { get; set; }
+    private InvitationDto Invitation { get; set; } = new();
+    private string MailTo { get; set; } = string.Empty;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await DisplayInvitationFromSelectedEvent();
+    }
+
+    private async Task DisplayInvitationFromSelectedEvent()
+    {
+        var getEvent = await MultiService.EventService.GetAllEvents();
+
+        if (getEvent.IsFailed)
+        {
+            OpenMessageModal($"Could not get any Events.");
+            return;
+
+        }
+
+        var foundEvent = getEvent.Value.Where(e => e.EventId == EventIdFromParameter);
+
+        if (foundEvent is null)
+        {
+            OpenMessageModal($"Could not get Event with this Id.");
+            return;
+
+        }
+
+        var getInvitation = foundEvent.Select(e => e.InvitationId).FirstOrDefault();
+
+        var invitationFrom =  getInvitation;
+
+        if (invitationFrom == Guid.Empty)
+        {
+            OpenMessageModal($"Could not get Invitation from event, event doesn't hold this invitation.");
+            return;
+
+        }
+
+        var foundInvitation = await MultiService.InvitationService.GetInvitationById(invitationFrom.Value);
+
+         
+        if (foundInvitation.IsFailed)
+        {
+            OpenMessageModal($"Could not get Invitation.");
+
+        }
+            DisplayInvitation = true;
+        Invitation = foundInvitation.Value;
+        MailTo = $"mailto:{Invitation.ContactEmail}?subject=Användarmöte";
+        
+    } 
+    
+
+    private void ClosePreviewInvitation()
+    {
+        DisplayInvitation = false;
+        Invitation = new InvitationDto();
+        MailTo = string.Empty;
+        NavigationManager.NavigateTo("/viewEvents");
+        
+    }
+
+    private void OpenMessageModal(string message)
+    {
+        ShowMessageModal = true;
+        ModalMessage = message;
+    }
+
+    private void CloseModalMessage()
+    {
+        ShowMessageModal = false;
+        ModalMessage = "";
+    }
+
+}

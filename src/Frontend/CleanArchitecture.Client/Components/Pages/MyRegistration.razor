@@ -1,0 +1,244 @@
+﻿@page "/myRegistration"
+@using Microsoft.AspNetCore.Authorization
+@using CleanArchitecture.Client.Components.VisualEffects.Modals
+@using CleanArchitecture.Client.Components.VisualEffects.Icons
+@rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [Authorize(Roles = "Admin, User")]
+
+<!-- #region Styles -->
+
+<style>
+
+
+
+    .card {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transition: box-shadow 0.03s ease-in-out;
+    }
+
+        .card:hover {
+            box-shadow: 0 10px 16px rgba(0,0,0,0.2);
+        }
+
+
+
+    .bold-black-border {
+        border: 1px solid black;
+    }
+    /* Container to hold the entire layout */
+    .container {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        background-color: white;
+    }
+
+    /* Header section with the top image */
+    .header {
+        flex: 0 1 auto;
+        text-align: center;
+        margin: 0; /* Ensure no margin around the header */
+        padding: 0; /* Ensure no padding around the header */
+    }
+
+    /* Main content section */
+    .main-content {
+        flex: 1 0 auto;
+        padding: 20px;
+        text-align: center;
+        background-color: transparent;
+        justify-content: center;
+    }
+
+    .column {
+        float: left;
+        padding: 10px;
+    }
+        /* Left and right column */
+        .column.side {
+            width: 25%;
+        }
+
+        /* Middle column */
+        .column.middle {
+            width: 50%;
+            justify-content: center;
+        }
+
+    /* Clear floats after the columns */
+    .row::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    .header-color {
+        background-color: #9a8fff;
+    }
+
+</style>
+
+<!-- #endregion -->
+
+
+<div class="container mb-5">
+    <header class="header mt-3">
+        <h1>MIN ANMÄLAN</h1> <hr />
+    </header>
+    <main class="main-content">
+        
+        
+        @if (RegistrationInfo.Any())
+        {
+            <div class="row justify-content-center">
+
+                <Virtualize Items="RegistrationInfo" Context="reg">
+
+                    <div class="col-xl-4 m-xl-4 m-2">
+
+                        <div class="card border-eventsphere mb-5">
+                            <div class="card-body">
+	                            <h4 class="mb-3">@reg.EventName </h4>
+                                <h6><span>@reg.EventDate.ToString("yyyy-MM-dd")</span></h6>
+                                <div class="list-group">
+
+                                    <div class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <p class="mb-1 fw-bold">Namn</p>
+                                        </div>
+                                        <p class="mb-1 ms-2">@reg.FullName</p>
+                                    </div>
+
+                                    <div class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <p class="mb-1 fw-bold">Email</p>
+                                        </div>
+                                        <p class="mb-1 ms-2">@reg.Email</p>
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(reg.Phone))
+                                    {
+                                        <div class="list-group-item list-group-item-action">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <p class="mb-1 fw-bold">Telefon</p>
+                                            </div>
+                                            <p class="mb-1 ms-2">@reg.Phone</p>
+                                        </div>
+                                    }
+
+                                    <div class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <p class="mb-1 fw-bold">Företag</p>
+                                        </div>
+                                        <p class="mb-1 ms-2">@reg.Company</p>
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(reg.InvoiceReference))
+                                    {
+                                        <div class="list-group-item list-group-item-action">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <p class="mb-1 fw-bold">Fakturareferens</p>
+                                            </div>
+                                            <p class="mb-1 ms-2">@reg.InvoiceReference</p>
+                                        </div>
+                                    }
+
+                                    @if (!string.IsNullOrWhiteSpace(reg.Allergies))
+                                    {
+                                        <div class="list-group-item list-group-item-action">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <p class="mb-1 fw-bold">Allergier</p>
+                                            </div>
+                                            <p class="mb-1 ms-2">@reg.Allergies</p>
+                                        </div>
+                                    }
+
+                                    @if (!string.IsNullOrWhiteSpace(reg.UserInformation))
+                                    {
+                                        <div class="list-group-item list-group-item-action">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <p class="mb-1 fw-bold">Övrig info</p>
+                                            </div>
+                                            <p class="mb-1 ms-2">@reg.UserInformation</p>
+                                        </div>
+                                    }
+
+                                    <div class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <p class="mb-1 fw-bold">Hotellrum</p>
+                                        </div>
+                                        <p class="mb-1 ms-2">@reg.Accommodation</p>
+                                    </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(reg.AccommodationWith))
+                                    {
+                                        <div class="list-group-item list-group-item-action">
+                                            <div class="d-flex w-100 justify-content-between">
+                                                <p class="mb-1 fw-bold">Delar boende med</p>
+                                            </div>
+                                            <p class="mb-1 ms-2">@reg.AccommodationWith</p>
+                                        </div>
+                                    }
+
+                                </div>
+
+                                <label class="mt-4">Vid frågor eller ändringar kontakta <a href="mailto:@reg.ContactEmail?subject=@reg.EventName">@reg.ContactEmail</a> <br/> eller @reg.ContactInfo</label>
+
+                            </div>
+                        </div>
+                    </div>
+
+                </Virtualize>
+
+            </div>
+        }
+
+        <div class="row">
+           
+            <div class="column side">
+            </div>
+
+            <div class="column middle">
+
+                @if (!RegistrationInfo.Any())
+                {
+                    <div class="card mb-5">
+                        <div class="card-header text-center">
+                            <p>Hej och välkommen!</p>
+                        </div>
+                        <div class="card-img">
+                            <img src="images/keyboard.jpg" alt="EventSphere-logga" class="img-fluid"/>
+                        </div>
+                        <div class="card-footer">
+                            <p class="card-text"> Du är för tillfället inte anmäld till något Evenemang.</p>
+                        </div>
+
+                    </div>
+                }
+            </div>
+
+
+
+            <div class="column side">
+            </div>
+        </div>
+
+    </main>
+</div>
+
+
+@if (ShowMessageModal)
+{
+    <ModalNew Title="Meddelande" OnCancel="CloseMessageModal">
+        <ModalBody>
+            @ModalMessage
+        </ModalBody>
+        <ModalFooter>
+            <button class="btn btn-primary" @onclick="CloseMessageModal"><IconBack></IconBack></button>
+        </ModalFooter>
+    </ModalNew>
+}
+
+
+
