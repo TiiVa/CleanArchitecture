@@ -10,8 +10,6 @@ namespace CleanArchitecture.Client.Components.Pages.AdminPages;
 public partial class Resources : ComponentBase
 {
 
-
-    [Inject] private NavigationManager NavigationManager { get; set; }
     private bool ResourceExists => AllResources.Any();
     private bool ShowCreateDocumentModal { get; set; }
     private bool ShowUpdateDocumentModal { get; set; }
